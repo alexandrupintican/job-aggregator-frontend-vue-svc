@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-yarn dev       # Vite dev server on 0.0.0.0:3000 (vite.config.ts sets port 3000; the README's 5173 is outdated)
+yarn dev       # Vite dev server on port 3000 (next free port if taken)
 yarn build     # vue-tsc -b type-check, then vite build -> dist/
 yarn preview   # serve the production build
 docker build -t job-aggregator . && docker run --rm -p 8080:80 job-aggregator   # nginx SPA image
@@ -32,8 +32,8 @@ The URL never changes. Note that `HomePage.vue` also wraps itself in `layouts/De
 
 - Every distinct section or block goes in its own `.vue` file so that a change to it shows up everywhere it is reused. `HomePage.vue` follows this pattern.
 - Page-level sections go in `components/sections/`, e.g. `HeroSection`, `JobsSection`.
-- Smaller reusable pieces go in `components/content/`, e.g. `JobCard`, `JobSearchForm`, `JobsEmptyState`.
-- Shared building blocks go in `components/ui/`, e.g. `BrandLogo`.
+- Smaller reusable pieces go in `components/content/`, e.g. `JobCard`, `JobSearchForm`, `RequestPreview`, `JobsPager`, `JobsEmptyState`, `JobsErrorState`.
+- Shared building blocks go in `components/ui/`, e.g. `BrandLogo`, `TextButton`.
 - Components receive data through props or `defineModel` and report back through emits. They don't call page composables themselves.
 - Each component owns its styles in `<style lang="scss" scoped>`, including its media queries (breakpoints are 1400/900/680px).
   - Each component starts its style block with `@use '@globalStyle/variables' as *;`, plus `mixins` when needed.
@@ -48,18 +48,22 @@ The URL never changes. Note that `HomePage.vue` also wraps itself in `layouts/De
 
 Only stored `ref`/`reactive` values are reactive, and `initVault` uses `inject`, so it only works inside `setup` or another injection context. `PublicMembers<T>` does not actually filter any keys.
 
-**Job search data.** Listings are static sample data in `models/jobs.ts`, typed by `models/job.ts`. `composables/useJobSearch.ts` filters them on the client. It keeps two copies of the criteria: `criteria` is the live form model, and `submittedCriteria` only updates when `search()` is called. Results therefore change on submit, not as the user types. This composable does _not_ use the vault, so its state is per component instance. Nothing calls the backend yet. `utils/utils.ts` `getEnvVariable` reads `import.meta.env` (e.g. `VITE_API_URL`), and `vite.config.ts` loads `VITE_*` env vars.
+**Job search data.** Listings come from the Jobs Listing API (a separate Go service, `go run ./cmd/jobs-api`), which serves an exported `jobs.json` at `VITE_API_URL` (`.env`, default `http://localhost:8000`). Its spec is at `/openapi.json` and Swagger UI at `/docs`.
 
-**API layer (`src/api/`).** This is a skeleton built on native `fetch`; nothing calls it yet.
+- `GET /api/jobs` accepts only `limit` (1–500, server default 100), `offset`, `status`, `source`, `company`, `location`, `work_mode` and `q`, and silently ignores anything else. Every filter except `q` is a case-insensitive exact match. Invalid pagination returns 400. The response is `{ total, limit, offset, jobs }`.
+- `composables/useJobSearch.ts` holds the query as `criteria` (the live form model; the form has one field per parameter) and only calls the API when `search()` runs, so results change on submit, not as the user types. `requestPath` previews the exact request from the draft. It also exposes `page`, `loading`, `error`, `goToOffset()` and `clearSearch()`, runs the first search on creation, and discards responses from superseded requests.
+- `page` is a `shallowRef`: `ref()` strips the model classes' private fields from the type.
+- The composable does _not_ use the vault, so its state is per component instance.
+- `models/job.ts` and `models/jobs.ts` are the old sample data and are unused.
 
-- `client.ts` exports `apiClient` (get, post, put, patch and delete).
-- The client prefixes paths with `VITE_API_URL` and serializes query params, skipping empty values.
-- Bodies are JSON-encoded unless they are `FormData`.
-- Requests time out after 15s by default and also accept a caller's `AbortSignal`.
-- The JSON (or text) response is parsed, and any non-2xx status throws `ApiError(status, url, payload)`.
-- Each resource gets its own module, typed with `models/` types, e.g. `jobs.ts` exports `jobsApi.search` and `jobsApi.getById`. Its endpoint paths are placeholders.
-- `index.ts` re-exports everything.
-- Components call these modules through composables, never `fetch` directly.
+**API layer (`src/api/api.ts`).** A small `fetch` wrapper. `request()` prefixes the path with `VITE_API_URL` (via `utils/utils.ts` `getEnvVariable`; `vite.config.ts` loads `VITE_*` vars) and throws an `Error` on non-2xx. The default export holds the services; `jobService.getJobs(query: JobListingQueryModel)` returns a `JobPageModel`. `JOBS_ENDPOINT` is exported for the request preview. Components reach the API only through composables.
+
+**Models and types.**
+
+- `types/models/jobListings.d.ts` holds every raw API type (`JobListing`, `JobPage`, `JobListingQuery`, …) in one file. Keep it as one file.
+- `models/JobService/` holds one read-only class per file (`JobPageModel`, `JobListingModel`, `JobListingAssessmentModel`, `JobListingSourceModel`, `JobListingQueryModel`). Each wraps the raw payload in a `private readonly data` field and exposes it through `getX()` methods (not `get x()` accessors, no setters), with camelCase names, `Date` for timestamps and `readonly` arrays. Nested objects are wrapped in the constructor.
+- `JobListingModel.getId()` (`source:source_id`) is unique and is the list key. `JobListingQueryModel.getQueryString()` builds the query string, skipping empty values.
+- Descriptions are raw HTML from job boards; `JobCard` shows them as shortened plain text. Don't render them with `v-html`.
 
 **Responsive helpers.** `plugins/breakpoint.ts` exports module-level computed flags (`isMobile`, `isTablet`, `isSmallDevice`, …) driven by one shared `resize` listener. Import them directly; they are not installed as a Vue plugin.
 
@@ -70,4 +74,4 @@ Only stored `ref`/`reactive` values are reactive, and `initVault` uses `inject`,
 - `src/vite/devSingleCss.ts` is a dev-only Vite plugin (`apply: "serve"`). It collects every transformed `.scss` source, compiles them together with sass, and serves the result as `/@dev-bundled-styles.css`, which it injects into `index.html`.
 - Production builds use `cssCodeSplit: false`, so there is a single CSS file.
 
-**Deployment.** Multi-stage Dockerfile: a Node 20 build stage, then nginx. `nginx.conf` falls back to `index.html` for every path.
+**Deployment.** Multi-stage Dockerfile: a Node 20 build stage, then nginx. `nginx.conf` falls back to `index.html` for every path. `.env` is committed and copied into the build, so `VITE_API_URL` is baked into the bundle at build time; nginx does not proxy `/api`.

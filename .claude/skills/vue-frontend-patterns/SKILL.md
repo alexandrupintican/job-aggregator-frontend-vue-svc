@@ -1,6 +1,6 @@
 ---
 name: vue-frontend-patterns
-description: Patterns and conventions for building UI in this Vue 3 + TypeScript + Vite + SCSS job-aggregator frontend. Covers adding pages (state-driven page switching, not routes), splitting pages into section components, scoped component styles, vault-backed shared composables, the search composable, breakpoint helpers and models. Use this skill whenever you create or modify a page, component, section, composable, style, or shared state in this repo, even if the request doesn't mention "patterns". Examples include "add a saved jobs page", "make a job details modal", "restyle the hero", "share filter state between components", "add a stats section", or "make the card responsive".
+description: Patterns and conventions for building UI in this Vue 3 + TypeScript + Vite + SCSS job-aggregator frontend. Covers adding pages (state-driven page switching, not routes), splitting pages into section components, scoped component styles, vault-backed shared composables, the API-backed search composable, the API service and read-only model classes, and breakpoint helpers. Use this skill whenever you create or modify a page, component, section, composable, style, or shared state in this repo, even if the request doesn't mention "patterns". Examples include "add a saved jobs page", "make a job details modal", "restyle the hero", "share filter state between components", "add a stats section", or "make the card responsive".
 ---
 
 # Vue frontend patterns
@@ -9,16 +9,18 @@ This app is a Vue 3 SPA built with `<script setup lang="ts">`, Vite and SCSS. It
 
 ## Where things go
 
-| Kind                                 | Location                                                           | Example                                      |
-| ------------------------------------ | ------------------------------------------------------------------ | -------------------------------------------- |
-| Page: a thin composition of sections | `src/pages/`                                                       | `HomePage.vue`                               |
-| Page-level section                   | `src/components/sections/`                                         | `HeroSection`, `JobsSection`                 |
-| Reusable content block               | `src/components/content/`                                          | `JobCard`, `JobSearchForm`, `JobsEmptyState` |
-| Small shared UI primitive            | `src/components/ui/`                                               | `BrandLogo`                                  |
-| App shell                            | `src/components/header/`, `src/components/footer/`, `src/layouts/` | `AppHeader`, `DefaultLayout`                 |
-| Composition logic                    | `src/composables/`                                                 | `useJobSearch`, `usePages`                   |
-| Types and sample data                | `src/models/`                                                      | `job.ts`, `jobs.ts`                          |
-| Global SCSS partials                 | `src/assets/style/` (alias `@globalStyle`)                         | `_variables`, `_mixins`, `_animations`       |
+| Kind | Location | Example |
+| --- | --- | --- |
+| Page: a thin composition of sections | `src/pages/` | `HomePage.vue` |
+| Page-level section | `src/components/sections/` | `HeroSection`, `JobsSection` |
+| Reusable content block | `src/components/content/` | `JobCard`, `JobSearchForm`, `JobsPager`, `RequestPreview`, `JobsEmptyState`, `JobsErrorState` |
+| Small shared UI primitive | `src/components/ui/` | `BrandLogo`, `TextButton` |
+| App shell | `src/components/header/`, `src/components/footer/`, `src/layouts/` | `AppHeader`, `DefaultLayout` |
+| Composition logic | `src/composables/` | `useJobSearch`, `usePages` |
+| API service | `src/api/` | `api.ts` (`jobService.getJobs`) |
+| Read-only model classes, one per file | `src/models/JobService/` | `JobPageModel`, `JobListingModel`, `JobListingQueryModel` |
+| Raw API types, all in one file | `src/types/models/jobListings.d.ts` | `JobListing`, `JobPage`, `JobListingQuery` |
+| Global SCSS partials | `src/assets/style/` (alias `@globalStyle`) | `_variables`, `_mixins`, `_animations` |
 
 Use the `@/` alias for imports from `src`.
 
@@ -34,13 +36,34 @@ import JobsSection from "@/components/sections/JobsSection.vue";
 import { useJobSearch } from "@/composables/useJobSearch";
 import DefaultLayout from "@/layouts/DefaultLayout.vue";
 
-const { criteria, filteredJobs, search, clearSearch } = useJobSearch();
+const {
+  criteria,
+  page,
+  loading,
+  error,
+  requestPath,
+  search,
+  goToOffset,
+  clearSearch,
+} = useJobSearch();
 </script>
 
 <template>
   <DefaultLayout>
-    <HeroSection v-model="criteria" @search="search" @clear="clearSearch" />
-    <JobsSection :jobs="filteredJobs" @clear="clearSearch" />
+    <HeroSection
+      v-model="criteria"
+      :request-path="requestPath"
+      @search="search"
+      @clear="clearSearch"
+    />
+    <JobsSection
+      :error="error"
+      :loading="loading"
+      :page="page"
+      @clear="clearSearch"
+      @page="goToOffset"
+      @retry="search"
+    />
   </DefaultLayout>
 </template>
 ```
@@ -48,9 +71,9 @@ const { criteria, filteredJobs, search, clearSearch } = useJobSearch();
 Rules for components:
 
 - **Data in through props or `defineModel`, intent out through `defineEmits`.** Sections and content blocks don't call page composables such as `useJobSearch` themselves. Composable state is per-instance unless it's vault-backed, so a section that called it would get its own disconnected copy. Taking props also keeps the component reusable on other pages.
-- **Forward events up rather than handling them in the middle.** `JobsSection` re-emits `clear` from `JobsEmptyState` (`@clear="$emit('clear')"`), and the page decides what clearing means.
-- **Prefer a component to a shared class.** If two components need the same styled markup, extract a `ui/` component with props for the variants. For example, `<BrandLogo dot>` and `<BrandLogo muted>` both use `BrandLogo`, and `<BrandLogo compact />` is the footer's smaller logo.
-- Use typed macros: `defineProps<{ jobs: Job[] }>()`, and `withDefaults(...)` for optional booleans.
+- **Forward events up rather than handling them in the middle.** `JobsSection` re-emits `clear` from `JobsEmptyState`, `retry` from `JobsErrorState` and `page` (the new offset) from `JobsPager`, and the page decides what each one means.
+- **Prefer a component to a shared class.** If two components need the same styled markup, extract a `ui/` component with props for the variants. For example, `<BrandLogo compact />` is the footer's smaller logo, and `TextButton` is the link-style button shared by `JobsEmptyState` ("Clear your search") and `JobsErrorState` ("Try again").
+- Use typed macros: `defineProps<{ job: JobListingModel }>()`, and `withDefaults(...)` for optional booleans.
 - Non-prop attributes fall through to the root element. For example, `aria-label` on `BrandLogo` lands on its `RouterLink`.
 
 ## 2. Styles live in the component, scoped
@@ -78,7 +101,7 @@ Each component owns its styles in a scoped SCSS block in the same file. That inc
 - **Import the partials yourself.** `scss.preprocessorOptions` doesn't inject anything automatically, so every block that uses `$color-*`, `$font-*` or `$content-width` needs the `@use` line.
 - **Use the existing tokens.** Colors are `$color-ink`, `$color-muted`, `$color-green`, `$color-green-dark`, `$color-lime`, `$color-paper`, `$color-white` and `$color-border`. Fonts are `$font-display` (serif headings) and `$font-body`. Mixins are `content-width` and `focus-ring`. One-off tints are written inline as hex, as the existing components do.
 - **Breakpoints in CSS are 1400px, 900px and 680px.** The `max-width: 680px` breakpoint is the mobile layout.
-- **Name classes BEM-style after the component**, e.g. `.job-card`, `.job-card__title-row`, `.job-card__company-mark--peach`. Modifier classes can come from data: ``:class="`job-card__company-mark--${job.color}`"``.
+- **Name classes BEM-style after the component**, e.g. `.job-card`, `.job-card__title-row`, `.job-card__company-mark--peach`. Modifier classes can come from data: ``:class="`job-card__status--${status}`"``.
 - **Keep `src/assets/style/main.scss` global-only.** It holds the reset, base element styles, `.sr-only` and the reduced-motion override. Don't add component classes to it.
 - **Put keyframes in `_animations.scss`.** They're global, so scoped blocks can reference them, e.g. `animation: rise-in 350ms ease both`.
 - Scoped styles don't reach into child components. To restyle a child, give it a prop or variant rather than using `:deep()`.
@@ -156,11 +179,42 @@ If the state is local to one component tree, don't use the vault. A plain compos
 
 ## 5. Plain composables
 
-`src/composables/useJobSearch.ts` is the model for a non-shared composable. It's a named export that returns refs, computeds and functions, and takes optional inputs with defaults (`listings: Job[] = jobs`). It keeps **draft vs submitted** state: `criteria` is the live form model bound with `v-model`, and `submittedCriteria` only changes when `search()` runs. So `filteredJobs` updates on submit, not on every keystroke. Keep that split if you extend search. Instant filtering would be a behavior change to raise with the user.
+`src/composables/useJobSearch.ts` is the model for a non-shared composable. It's a named export that returns refs, computeds and functions. It keeps **draft vs sent** state: `criteria` (a `JobListingQuery`) is the live form model bound with `v-model`, and a request only goes out when `search()` runs. `requestPath` is computed from the draft so the form can preview the exact request, but results only change on submit, not on every keystroke. Keep that split if you extend search. Searching as you type would be a behavior change to raise with the user.
 
-Data is currently the static sample set in `src/models/jobs.ts`, typed by `src/models/job.ts`, and nothing calls the backend yet. When you add one, add or extend a resource module in `src/api/`, e.g. `jobsApi` in `src/api/jobs.ts`, built on `apiClient` from `src/api/client.ts`. Call it from a composable, not from a component, and handle `ApiError` there. Put new domain types in `src/models/`. Read environment values through `getEnvVariable` in `src/utils/utils.ts`; only `VITE_`-prefixed variables reach the client.
+What it returns:
 
-## 6. Responsive logic in script
+- `criteria`: the form model. `clearSearch()` resets it to the defaults (`limit: 20`, `offset: 0`, empty strings) and searches again.
+- `page`: a `JobPageModel | null` held in a **`shallowRef`**. Use `shallowRef` for the model classes. `ref()` deep-unwraps them and its type drops their private fields, which breaks assignment to `JobPageModel`. The instances are read-only anyway, so deep reactivity buys nothing.
+- `loading` and `error` (a message string or `null`).
+- `search()`, and `goToOffset(offset)`, which writes `offset` into `criteria` and searches.
+
+Requests are numbered, and only the latest one may write `page`, `loading` or `error`, so a slow earlier response can't overwrite a newer one. The composable runs the first search when it's created.
+
+## 6. API service and model classes
+
+All backend access goes through `src/api/api.ts`. Its default export holds the services, e.g. `api.jobService.getJobs(query)`.
+
+- `request()` prefixes the path with `VITE_API_URL` and throws an `Error` on any non-2xx status. The URL is read through `getEnvVariable` in `src/utils/utils.ts`, and only `VITE_`-prefixed variables reach the client.
+- `getJobs(query: JobListingQueryModel)` calls `${JOBS_ENDPOINT}${query.getQueryString()}` and wraps the JSON in a `JobPageModel`. `JOBS_ENDPOINT` (`/api/jobs`) is exported so the request preview uses the same path.
+- Call services from a composable, never from a component, and turn errors into state there.
+- The endpoint accepts only `limit`, `offset`, `status`, `source`, `company`, `location`, `work_mode` and `q`, and silently ignores any other parameter. `status`, `source`, `company`, `location` and `work_mode` are case-insensitive exact matches. An out-of-range `limit` or `offset` returns a 400. The spec is at `/openapi.json` on the API host.
+
+Responses are wrapped in **read-only model classes** in `src/models/JobService/`:
+
+- There's one class per file, named `<thing>Model`: `JobPageModel`, `JobListingModel`, `JobListingAssessmentModel`, `JobListingSourceModel` and `JobListingQueryModel`.
+- The constructor takes the raw payload type from `src/types/models/jobListings.d.ts` and keeps it in a `private readonly data` field.
+- Values are exposed through **`getX()` methods, not `get x()` accessors, and there are no setters**. Names are camelCase (`getWorkMode()` for `work_mode`). Date strings come back as `Date` (`getPublishedAt()`), and lists come back as `readonly` arrays.
+- Nested objects are wrapped once, in the constructor. `JobPageModel` builds `JobListingModel`s, which build their assessment and source models.
+- `JobListingModel.getId()` returns `source:source_id`. It's unique across listings, so use it as the `v-for` key.
+- `JobListingQueryModel` is built from the form's `JobListingQuery`. `getQueryString()` produces the query string and leaves out empty values.
+
+Raw payload types stay together in the single file `src/types/models/jobListings.d.ts`. Don't split it into one file per type.
+
+Listing descriptions are raw HTML from the job boards. Don't render them with `v-html`; `JobCard` turns them into shortened plain text.
+
+`src/models/job.ts` and `src/models/jobs.ts` hold the old sample data and are no longer used.
+
+## 7. Responsive logic in script
 
 For layout decisions CSS can't make, such as rendering a different component on mobile, import the computed flags from `src/plugins/breakpoint.ts`:
 
@@ -172,7 +226,10 @@ They share one module-level `resize` listener and aren't installed as a Vue plug
 
 ## Code style
 
-- Match the file you're in. Components, models and `useJobSearch` use single quotes and no semicolons. The plugins, router, vault, `usePages` and `PageView` use double quotes and semicolons. Don't reformat files you aren't otherwise changing.
+- Match the file you're in, because the codebase mixes two styles.
+  - Single quotes and no semicolons: `useJobSearch`, `JobCard`, `JobsPager`, `JobsEmptyState`, `JobsErrorState` and `AppHeader`.
+  - Double quotes and semicolons: `api.ts`, the `JobService` models, `HomePage`, `HeroSection`, `JobsSection`, `JobSearchForm`, `AppFooter`, the plugins, router, vault, `usePages` and `PageView`.
+  - Don't reformat files you aren't otherwise changing.
 - Templates use PascalCase component tags. Use `aria-hidden="true"` on decorative glyphs and an `aria-label` or `.sr-only` text on icon-only controls, as the existing components do.
 
 ## Checking your work
@@ -182,4 +239,4 @@ npx vue-tsc -b      # type-check (noEmit, writes nothing into src/)
 npx vite build      # bundle
 ```
 
-`yarn build` runs both. If you start the dev server, it runs on port 3000. Look at the change at desktop width and below 680px.
+`yarn build` runs both. If you start the dev server, it runs on port 3000. Search results need the Jobs Listing API running at `VITE_API_URL`, which comes from `.env` and defaults to `http://localhost:8000`. Look at the change at desktop width and below 680px.
