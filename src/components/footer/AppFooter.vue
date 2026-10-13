@@ -1,20 +1,18 @@
 <script setup lang="ts">
-import BrandLogo from '@/components/ui/BrandLogo.vue'
+import BrandLogo from "@/components/ui/BrandLogo.vue";
 </script>
 
 <template>
   <footer id="about" class="site-footer">
     <div class="site-footer__inner">
-      <BrandLogo mark="w." name="workfolk" compact />
-      <p>Good work is out there. Let's find it.</p>
-      <span class="site-footer__copyright">Made for your next chapter · 2025</span>
+      <BrandLogo mark="j." name="Job Aggregator" compact />
     </div>
   </footer>
 </template>
 
 <style lang="scss" scoped>
-@use '@globalStyle/variables' as *;
-@use '@globalStyle/mixins' as *;
+@use "@globalStyle/variables" as *;
+@use "@globalStyle/mixins" as *;
 
 .site-footer {
   min-height: 76px;

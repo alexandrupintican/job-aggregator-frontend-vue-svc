@@ -1,6 +1,9 @@
 import JobListingQueryModel from "@/models/JobService/jobListingQueryModel";
-import { JobListing } from "@/types/models/jobListings";
+import { JobPageModel } from "@/models/JobService/jobPageModel";
+import { JobPage } from "@/types/models/jobListings";
 import { getEnvVariable } from "@/utils/utils";
+
+export const JOBS_ENDPOINT = "/api/jobs";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(
@@ -21,8 +24,10 @@ async function runRequest<T>(endpoint: string): Promise<T> {
 
 function createJobService() {
   const jobService = {
-    getJobs: (query: JobListingQueryModel): Promise<JobListing[]> =>
-      runRequest<JobListing[]>("/api/jobs"),
+    getJobs: async (query: JobListingQueryModel): Promise<JobPageModel> =>
+      new JobPageModel(
+        await runRequest<JobPage>(`${JOBS_ENDPOINT}${query.getQueryString()}`),
+      ),
   };
   return jobService;
 }

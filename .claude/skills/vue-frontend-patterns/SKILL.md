@@ -9,16 +9,16 @@ This app is a Vue 3 SPA built with `<script setup lang="ts">`, Vite and SCSS. It
 
 ## Where things go
 
-| Kind | Location | Example |
-|---|---|---|
-| Page: a thin composition of sections | `src/pages/` | `HomePage.vue` |
-| Page-level section | `src/components/sections/` | `HeroSection`, `JobsSection`, `ClosingSection` |
-| Reusable content block | `src/components/content/` | `JobCard`, `JobSearchForm`, `JobsEmptyState` |
-| Small shared UI primitive | `src/components/ui/` | `BrandLogo`, `SectionEyebrow` |
-| App shell | `src/components/header/`, `src/components/footer/`, `src/layouts/` | `AppHeader`, `DefaultLayout` |
-| Composition logic | `src/composables/` | `useJobSearch`, `usePages` |
-| Types and sample data | `src/models/` | `job.ts`, `jobs.ts` |
-| Global SCSS partials | `src/assets/style/` (alias `@globalStyle`) | `_variables`, `_mixins`, `_animations` |
+| Kind                                 | Location                                                           | Example                                      |
+| ------------------------------------ | ------------------------------------------------------------------ | -------------------------------------------- |
+| Page: a thin composition of sections | `src/pages/`                                                       | `HomePage.vue`                               |
+| Page-level section                   | `src/components/sections/`                                         | `HeroSection`, `JobsSection`                 |
+| Reusable content block               | `src/components/content/`                                          | `JobCard`, `JobSearchForm`, `JobsEmptyState` |
+| Small shared UI primitive            | `src/components/ui/`                                               | `BrandLogo`                                  |
+| App shell                            | `src/components/header/`, `src/components/footer/`, `src/layouts/` | `AppHeader`, `DefaultLayout`                 |
+| Composition logic                    | `src/composables/`                                                 | `useJobSearch`, `usePages`                   |
+| Types and sample data                | `src/models/`                                                      | `job.ts`, `jobs.ts`                          |
+| Global SCSS partials                 | `src/assets/style/` (alias `@globalStyle`)                         | `_variables`, `_mixins`, `_animations`       |
 
 Use the `@/` alias for imports from `src`.
 
@@ -29,28 +29,27 @@ A page only does two things: it calls composables, and it wires their state into
 ```vue
 <!-- src/pages/HomePage.vue -->
 <script setup lang="ts">
-import ClosingSection from '@/components/sections/ClosingSection.vue'
-import HeroSection from '@/components/sections/HeroSection.vue'
-import JobsSection from '@/components/sections/JobsSection.vue'
-import { useJobSearch } from '@/composables/useJobSearch'
-import DefaultLayout from '@/layouts/DefaultLayout.vue'
+import HeroSection from "@/components/sections/HeroSection.vue";
+import JobsSection from "@/components/sections/JobsSection.vue";
+import { useJobSearch } from "@/composables/useJobSearch";
+import DefaultLayout from "@/layouts/DefaultLayout.vue";
 
-const { criteria, filteredJobs, search, clearSearch } = useJobSearch()
+const { criteria, filteredJobs, search, clearSearch } = useJobSearch();
 </script>
 
 <template>
   <DefaultLayout>
     <HeroSection v-model="criteria" @search="search" @clear="clearSearch" />
     <JobsSection :jobs="filteredJobs" @clear="clearSearch" />
-    <ClosingSection />
   </DefaultLayout>
 </template>
 ```
 
 Rules for components:
+
 - **Data in through props or `defineModel`, intent out through `defineEmits`.** Sections and content blocks don't call page composables such as `useJobSearch` themselves. Composable state is per-instance unless it's vault-backed, so a section that called it would get its own disconnected copy. Taking props also keeps the component reusable on other pages.
 - **Forward events up rather than handling them in the middle.** `JobsSection` re-emits `clear` from `JobsEmptyState` (`@clear="$emit('clear')"`), and the page decides what clearing means.
-- **Prefer a component to a shared class.** If two components need the same styled markup, extract a `ui/` component with props for the variants. For example, `<SectionEyebrow dot>` and `<SectionEyebrow muted>` both use `SectionEyebrow`, and `<BrandLogo compact />` is the footer's smaller logo.
+- **Prefer a component to a shared class.** If two components need the same styled markup, extract a `ui/` component with props for the variants. For example, `<BrandLogo dot>` and `<BrandLogo muted>` both use `BrandLogo`, and `<BrandLogo compact />` is the footer's smaller logo.
 - Use typed macros: `defineProps<{ jobs: Job[] }>()`, and `withDefaults(...)` for optional booleans.
 - Non-prop attributes fall through to the root element. For example, `aria-label` on `BrandLogo` lands on its `RouterLink`.
 
@@ -60,8 +59,8 @@ Each component owns its styles in a scoped SCSS block in the same file. That inc
 
 ```vue
 <style lang="scss" scoped>
-@use '@globalStyle/variables' as *;
-@use '@globalStyle/mixins' as *;   /* only if you use content-width / focus-ring */
+@use "@globalStyle/variables" as *;
+@use "@globalStyle/mixins" as *; /* only if you use content-width / focus-ring */
 
 .jobs-section {
   @include content-width;
@@ -79,7 +78,7 @@ Each component owns its styles in a scoped SCSS block in the same file. That inc
 - **Import the partials yourself.** `scss.preprocessorOptions` doesn't inject anything automatically, so every block that uses `$color-*`, `$font-*` or `$content-width` needs the `@use` line.
 - **Use the existing tokens.** Colors are `$color-ink`, `$color-muted`, `$color-green`, `$color-green-dark`, `$color-lime`, `$color-paper`, `$color-white` and `$color-border`. Fonts are `$font-display` (serif headings) and `$font-body`. Mixins are `content-width` and `focus-ring`. One-off tints are written inline as hex, as the existing components do.
 - **Breakpoints in CSS are 1400px, 900px and 680px.** The `max-width: 680px` breakpoint is the mobile layout.
-- **Name classes BEM-style after the component**, e.g. `.job-card`, `.job-card__title-row`, `.job-card__company-mark--peach`. Modifier classes can come from data: `` :class="`job-card__company-mark--${job.color}`" ``.
+- **Name classes BEM-style after the component**, e.g. `.job-card`, `.job-card__title-row`, `.job-card__company-mark--peach`. Modifier classes can come from data: ``:class="`job-card__company-mark--${job.color}`"``.
 - **Keep `src/assets/style/main.scss` global-only.** It holds the reset, base element styles, `.sr-only` and the reduced-motion override. Don't add component classes to it.
 - **Put keyframes in `_animations.scss`.** They're global, so scoped blocks can reference them, e.g. `animation: rise-in 350ms ease both`.
 - Scoped styles don't reach into child components. To restyle a child, give it a prop or variant rather than using `:deep()`.
@@ -95,11 +94,13 @@ The router has one catch-all route that renders `src/views/PageView.vue`. `PageV
      SAVED_JOBS_PAGE = "savedJobsPage",
    }
    ```
-2. Register it in the `Pages` map in `src/views/PageView.vue`. The key must equal the enum *value*:
+2. Register it in the `Pages` map in `src/views/PageView.vue`. The key must equal the enum _value_:
    ```ts
    const Pages = {
      homePage: defineAsyncComponent(() => import("@/pages/HomePage.vue")),
-     savedJobsPage: defineAsyncComponent(() => import("@/pages/SavedJobsPage.vue")),
+     savedJobsPage: defineAsyncComponent(
+       () => import("@/pages/SavedJobsPage.vue"),
+     ),
    };
    ```
 3. Create `src/pages/SavedJobsPage.vue` as a thin page made of section components (pattern 1).
@@ -107,11 +108,11 @@ The router has one catch-all route that renders `src/views/PageView.vue`. `PageV
 
 Don't add a new route to `src/router/index.ts` for an ordinary page. If the user explicitly wants real URLs, such as deep links or the back button, point out that this is an architectural change and confirm it first.
 
-A known quirk: `PageView` renders `AppHeader`/`AppFooter`, and `HomePage` *also* wraps itself in `DefaultLayout`, which renders them again. Don't copy that double wrapping into new pages without checking with the user how they want the layout resolved.
+A known quirk: `PageView` renders `AppHeader`/`AppFooter`, and `HomePage` _also_ wraps itself in `DefaultLayout`, which renders them again. Don't copy that double wrapping into new pages without checking with the user how they want the layout resolved.
 
 ## 4. Shared state: the vault
 
-`src/plugins/vault.ts` stands in for Pinia or Vuex. It's one plain object per app, reached through `inject`, and split into namespaces by `initVault<T>(key)`. Use it when several components need the *same* instance of a composable's state, or when state must survive a page switch. Follow `src/composables/usePages.ts`:
+`src/plugins/vault.ts` stands in for Pinia or Vuex. It's one plain object per app, reached through `inject`, and split into namespaces by `initVault<T>(key)`. Use it when several components need the _same_ instance of a composable's state, or when state must survive a page switch. Follow `src/composables/usePages.ts`:
 
 ```ts
 import { initVault } from "@/plugins/vault";
@@ -145,6 +146,7 @@ export default function useSavedJobs() {
 ```
 
 Things that will bite you:
+
 - **Always check `get` first.** `storeAndGet` overwrites unconditionally, so calling it without the check resets the state for every consumer.
 - **Store refs or reactive objects.** The vault itself isn't reactive, so a plain value you store never triggers a re-render.
 - **Use it only in an injection context.** `initVault` calls `inject`, so it works inside `setup` or another composable called from `setup`. It doesn't work in router guards or plain modules.
@@ -163,7 +165,7 @@ Data is currently the static sample set in `src/models/jobs.ts`, typed by `src/m
 For layout decisions CSS can't make, such as rendering a different component on mobile, import the computed flags from `src/plugins/breakpoint.ts`:
 
 ```ts
-import { isMobile, isSmallDevice } from '@/plugins/breakpoint'
+import { isMobile, isSmallDevice } from "@/plugins/breakpoint";
 ```
 
 They share one module-level `resize` listener and aren't installed as a Vue plugin. Their breakpoints (640/768/1024/1280/1536) are separate from the CSS breakpoints in pattern 2. For purely visual changes, prefer CSS media queries.

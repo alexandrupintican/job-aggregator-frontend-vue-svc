@@ -1,33 +1,79 @@
 <script setup lang="ts">
-import type { Job } from '@/models/job'
+import { computed } from 'vue'
+import type { JobListingModel } from '@/models/JobService/jobListingModel'
 
-defineProps<{
-  job: Job
+const props = defineProps<{
+  job: JobListingModel
 }>()
+
+const MARK_COLORS = ['lavender', 'peach', 'mint', 'blue', 'yellow', 'rose']
+const DESCRIPTION_LENGTH = 220
+
+const initials = computed(() =>
+  props.job
+    .getCompany()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word[0].toUpperCase())
+    .join(''),
+)
+
+const markColor = computed(() => {
+  const hash = [...props.job.getCompany()].reduce((sum, char) => sum + char.charCodeAt(0), 0)
+  return MARK_COLORS[hash % MARK_COLORS.length]
+})
+
+const posted = computed(() => {
+  const publishedAt = props.job.getPublishedAt()
+  if (!publishedAt) {
+    return ''
+  }
+
+  const days = Math.floor((Date.now() - publishedAt.getTime()) / 86_400_000)
+  if (days <= 0) return 'Today'
+  if (days === 1) return '1 day ago'
+  return `${days} days ago`
+})
+
+// The API returns the source board's HTML; show it as plain text instead of rendering it.
+const summary = computed(() => {
+  const text = new DOMParser()
+    .parseFromString(props.job.getDescription(), 'text/html')
+    .body.textContent?.replace(/\s+/g, ' ')
+    .trim() ?? ''
+  return text.length > DESCRIPTION_LENGTH ? `${text.slice(0, DESCRIPTION_LENGTH).trimEnd()}…` : text
+})
+
+const contractTypes = computed(() => props.job.getContractTypes().join(', '))
+const status = computed(() => props.job.getAssessment().getStatus())
 </script>
 
 <template>
   <article class="job-card">
-    <div class="job-card__company-mark" :class="`job-card__company-mark--${job.color}`">
-      {{ job.initials }}
+    <div class="job-card__company-mark" :class="`job-card__company-mark--${markColor}`">
+      {{ initials }}
     </div>
     <div class="job-card__main">
       <div class="job-card__title-row">
-        <h3>{{ job.title }}</h3>
-        <span class="job-card__posted">{{ job.posted }}</span>
+        <h3>
+          <a :href="job.getUrl()" rel="noopener noreferrer" target="_blank">{{ job.getTitle() }}</a>
+        </h3>
+        <span v-if="posted" class="job-card__posted">{{ posted }}</span>
       </div>
-      <p class="job-card__company">{{ job.company }} <span>·</span> {{ job.location }}</p>
-      <p class="job-card__description">{{ job.description }}</p>
+      <p class="job-card__company">{{ job.getCompany() }} <span>·</span> {{ job.getLocation() }}</p>
+      <p class="job-card__description">{{ summary }}</p>
       <div class="job-card__tags">
-        <span v-for="tag in job.tags" :key="tag">{{ tag }}</span>
+        <span v-for="term in job.getAssessment().getMatchedTerms()" :key="term">{{ term }}</span>
       </div>
     </div>
     <div class="job-card__details">
-      <span class="job-card__arrangement">{{ job.arrangement }}</span>
-      <span class="job-card__type">{{ job.type }}</span>
-      <span class="job-card__salary">{{ job.salary }}</span>
+      <span class="job-card__status" :class="`job-card__status--${status}`">{{ status }}</span>
+      <span class="job-card__arrangement">{{ job.getWorkMode() }}</span>
+      <span v-if="contractTypes" class="job-card__type">{{ contractTypes }}</span>
+      <span v-if="job.getCompensation()" class="job-card__salary">{{ job.getCompensation() }}</span>
     </div>
-    <button class="job-card__save" type="button" :aria-label="`Save ${job.title} at ${job.company}`">
+    <button class="job-card__save" type="button" :aria-label="`Save ${job.getTitle()} at ${job.getCompany()}`">
       <span aria-hidden="true">♡</span>
     </button>
   </article>
@@ -89,6 +135,16 @@ defineProps<{
   letter-spacing: -0.2px;
 }
 
+.job-card h3 a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.job-card h3 a:hover {
+  color: $color-green;
+  text-decoration: underline;
+}
+
 .job-card__posted {
   color: #929c94;
   font-size: 10px;
@@ -139,12 +195,27 @@ defineProps<{
   font-size: 10px;
 }
 
+.job-card__status,
 .job-card__arrangement {
   padding: 5px 8px;
   border-radius: 5px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.job-card__status {
+  background: #f3efd8;
+  color: #8c7e36;
+}
+
+.job-card__status--match {
+  background: #e0eee6;
+  color: #4b7c60;
+}
+
+.job-card__arrangement {
   background: #eef2ea;
   color: #526b57;
-  font-weight: 600;
 }
 
 .job-card__salary {

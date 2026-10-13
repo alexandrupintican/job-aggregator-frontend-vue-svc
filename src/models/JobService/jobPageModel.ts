@@ -1,5 +1,5 @@
 import type { JobPage } from "@/types/models/jobListings";
-import { JobListingModel } from "@/models/JobService/jobListing";
+import { JobListingModel } from "@/models/JobService/jobListingModel";
 
 export class JobPageModel {
   private readonly _jobs: readonly JobListingModel[];

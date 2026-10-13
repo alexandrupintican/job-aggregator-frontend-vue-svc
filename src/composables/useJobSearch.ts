@@ -1,51 +1,78 @@
-import { computed, ref } from 'vue'
-import type { Job, JobSearchCriteria } from '@/models/job'
-import { jobs } from '@/models/jobs'
+import { computed, ref, shallowRef } from 'vue'
+import api, { JOBS_ENDPOINT } from '@/api/api'
+import JobListingQueryModel from '@/models/JobService/jobListingQueryModel'
+import type { JobPageModel } from '@/models/JobService/jobPageModel'
+import type { JobListingQuery } from '@/types/models/jobListings'
 
-const emptyCriteria: JobSearchCriteria = {
-  keyword: '',
-  location: '',
-  arrangement: '',
+const DEFAULT_LIMIT = 20
+
+function emptyQuery(): JobListingQuery {
+  return {
+    q: '',
+    location: '',
+    company: '',
+    source: '',
+    status: '',
+    work_mode: '',
+    limit: DEFAULT_LIMIT,
+    offset: 0,
+  }
 }
 
-export function useJobSearch(listings: Job[] = jobs) {
-  const criteria = ref<JobSearchCriteria>({ ...emptyCriteria })
-  const submittedCriteria = ref<JobSearchCriteria>({ ...emptyCriteria })
+export function useJobSearch() {
+  // `criteria` is the live form model; a request only goes out on search().
+  const criteria = ref<JobListingQuery>(emptyQuery())
+  const page = shallowRef<JobPageModel | null>(null)
+  const loading = ref(false)
+  const error = ref<string | null>(null)
 
-  const filteredJobs = computed(() => {
-    const keyword = submittedCriteria.value.keyword.trim().toLowerCase()
-    const location = submittedCriteria.value.location.trim().toLowerCase()
-    const arrangement = submittedCriteria.value.arrangement
+  let latestRequest = 0
 
-    return listings.filter((job) => {
-      const searchableText = [
-        job.title,
-        job.company,
-        job.description,
-        ...job.tags,
-      ].join(' ').toLowerCase()
+  const requestPath = computed(
+    () => `${JOBS_ENDPOINT}${new JobListingQueryModel(criteria.value).getQueryString()}`,
+  )
 
-      return (
-        (!keyword || searchableText.includes(keyword)) &&
-        (!location || job.location.toLowerCase().includes(location)) &&
-        (!arrangement || job.arrangement === arrangement)
-      )
-    })
-  })
+  async function search() {
+    const requestId = ++latestRequest
+    loading.value = true
+    error.value = null
 
-  function search() {
-    submittedCriteria.value = { ...criteria.value }
+    try {
+      const result = await api.jobService.getJobs(new JobListingQueryModel({ ...criteria.value }))
+      if (requestId === latestRequest) {
+        page.value = result
+      }
+    } catch (err) {
+      if (requestId === latestRequest) {
+        error.value = err instanceof Error ? err.message : 'Unable to load jobs.'
+      }
+    } finally {
+      if (requestId === latestRequest) {
+        loading.value = false
+      }
+    }
+  }
+
+  function goToOffset(offset: number) {
+    criteria.value = { ...criteria.value, offset: Math.max(0, offset) }
+    return search()
   }
 
   function clearSearch() {
-    criteria.value = { ...emptyCriteria }
-    submittedCriteria.value = { ...emptyCriteria }
+    criteria.value = emptyQuery()
+    return search()
   }
+
+  search()
 
   return {
     criteria,
-    filteredJobs,
+    page,
+    loading,
+    error,
+    requestPath,
     search,
+    goToOffset,
     clearSearch,
   }
 }
