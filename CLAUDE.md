@@ -27,7 +27,7 @@ Vue 3 + TypeScript SPA (Vite, vue-router, `@unhead/vue`, SCSS). The `@` alias ma
 
 The URL never changes. Note that `HomePage.vue` also wraps itself in `layouts/DefaultLayout.vue`, which renders `AppHeader`/`AppFooter` too, so the header and footer currently render twice.
 
-**Component conventions.** Keep pages thin. A page only wires composable state into section components; it holds no large inline markup.
+**Component conventions.** The full playbook, with examples, is in the `vue-frontend-patterns` skill (`.claude/skills/vue-frontend-patterns/SKILL.md`). Keep pages thin. A page only wires composable state into section components; it holds no large inline markup.
 - Every distinct section or block goes in its own `.vue` file so that a change to it shows up everywhere it is reused. `HomePage.vue` follows this pattern.
 - Page-level sections go in `components/sections/`, e.g. `HeroSection`, `JobsSection`, `ClosingSection`.
 - Smaller reusable pieces go in `components/content/`, e.g. `JobCard`, `JobSearchForm`, `JobsEmptyState`.
@@ -45,7 +45,17 @@ The URL never changes. Note that `HomePage.vue` also wraps itself in `layouts/De
 
 Only stored `ref`/`reactive` values are reactive, and `initVault` uses `inject`, so it only works inside `setup` or another injection context. `PublicMembers<T>` does not actually filter any keys.
 
-**Job search data.** Listings are static sample data in `models/jobs.ts`, typed by `models/job.ts`. `composables/useJobSearch.ts` filters them on the client. It keeps two copies of the criteria: `criteria` is the live form model, and `submittedCriteria` only updates when `search()` is called. Results therefore change on submit, not as the user types. This composable does *not* use the vault, so its state is per component instance. There is no API integration yet. `utils/utils.ts` `getEnvVariable` reads `import.meta.env` (e.g. `VITE_API_URL`), and `vite.config.ts` loads `VITE_*` env vars.
+**Job search data.** Listings are static sample data in `models/jobs.ts`, typed by `models/job.ts`. `composables/useJobSearch.ts` filters them on the client. It keeps two copies of the criteria: `criteria` is the live form model, and `submittedCriteria` only updates when `search()` is called. Results therefore change on submit, not as the user types. This composable does *not* use the vault, so its state is per component instance. Nothing calls the backend yet. `utils/utils.ts` `getEnvVariable` reads `import.meta.env` (e.g. `VITE_API_URL`), and `vite.config.ts` loads `VITE_*` env vars.
+
+**API layer (`src/api/`).** This is a skeleton built on native `fetch`; nothing calls it yet.
+- `client.ts` exports `apiClient` (get, post, put, patch and delete).
+- The client prefixes paths with `VITE_API_URL` and serializes query params, skipping empty values.
+- Bodies are JSON-encoded unless they are `FormData`.
+- Requests time out after 15s by default and also accept a caller's `AbortSignal`.
+- The JSON (or text) response is parsed, and any non-2xx status throws `ApiError(status, url, payload)`.
+- Each resource gets its own module, typed with `models/` types, e.g. `jobs.ts` exports `jobsApi.search` and `jobsApi.getById`. Its endpoint paths are placeholders.
+- `index.ts` re-exports everything.
+- Components call these modules through composables, never `fetch` directly.
 
 **Responsive helpers.** `plugins/breakpoint.ts` exports module-level computed flags (`isMobile`, `isTablet`, `isSmallDevice`, …) driven by one shared `resize` listener. Import them directly; they are not installed as a Vue plugin.
 
