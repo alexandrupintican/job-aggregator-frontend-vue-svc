@@ -1,72 +1,127 @@
 <script setup lang="ts">
-import type { JobSearchCriteria } from '@/models/job'
+import type { JobListingQuery } from "@/types/models/jobListings";
 
-const model = defineModel<JobSearchCriteria>({ required: true })
+const model = defineModel<JobListingQuery>({ required: true });
 
 defineEmits<{
-  search: []
-  clear: []
-}>()
+  search: [];
+  clear: [];
+}>();
 </script>
 
 <template>
   <form class="search-panel" role="search" @submit.prevent="$emit('search')">
-    <label class="search-field search-field--keyword">
-      <span class="search-field__icon" aria-hidden="true">⌕</span>
-      <span class="search-field__body">
-        <span class="search-field__label">What are you looking for?</span>
+    <div class="search-panel__main">
+      <label class="search-field search-field--keyword">
+        <span class="search-field__icon" aria-hidden="true">⌕</span>
+        <span class="search-field__body">
+          <span class="search-field__label">Search <code>q</code></span>
+          <input
+            v-model="model.q"
+            autocomplete="off"
+            placeholder="Title, company, description or location"
+            type="search"
+          />
+        </span>
+      </label>
+      <span class="search-panel__divider" aria-hidden="true"></span>
+      <label class="search-field search-field--location">
+        <span
+          class="search-field__icon search-field__icon--pin"
+          aria-hidden="true"
+          >⌖</span
+        >
+        <span class="search-field__body">
+          <span class="search-field__label"
+            >Location <code>location</code></span
+          >
+          <input
+            v-model="model.location"
+            autocomplete="off"
+            placeholder="Exact, e.g. Romania"
+            type="search"
+          />
+        </span>
+      </label>
+      <button class="search-button" type="submit">
+        <span>Find jobs</span>
+        <span aria-hidden="true">↗</span>
+      </button>
+    </div>
+
+    <div class="search-panel__filters">
+      <label class="filter-field">
+        <span class="filter-field__label">Company <code>company</code></span>
         <input
-          v-model="model.keyword"
-          aria-label="Job title, skill, or company"
+          v-model="model.company"
           autocomplete="off"
-          placeholder="Job title, skill, or company"
-          type="search"
+          placeholder="Exact, e.g. GitLab"
+          type="text"
         />
-      </span>
-    </label>
-    <span class="search-panel__divider" aria-hidden="true"></span>
-    <label class="search-field search-field--location">
-      <span class="search-field__icon search-field__icon--pin" aria-hidden="true">⌖</span>
-      <span class="search-field__body">
-        <span class="search-field__label">Where?</span>
+      </label>
+      <label class="filter-field">
+        <span class="filter-field__label">Source <code>source</code></span>
         <input
-          v-model="model.location"
-          aria-label="City, state, or remote"
+          v-model="model.source"
           autocomplete="off"
-          placeholder="City, state, or remote"
-          type="search"
+          placeholder="Exact, e.g. ashby:n8n"
+          type="text"
         />
-      </span>
-    </label>
-    <label class="arrangement-select">
-      <span class="sr-only">Work arrangement</span>
-      <select v-model="model.arrangement" aria-label="Work arrangement">
-        <option value="">Any setup</option>
-        <option value="Remote">Remote</option>
-        <option value="Hybrid">Hybrid</option>
-        <option value="On-site">On-site</option>
-      </select>
-    </label>
-    <button class="search-button" type="submit">
-      <span>Find jobs</span>
-      <span aria-hidden="true">↗</span>
-    </button>
+      </label>
+      <label class="filter-field">
+        <span class="filter-field__label">Status <code>status</code></span>
+        <input
+          v-model="model.status"
+          autocomplete="off"
+          placeholder="Exact, e.g. match"
+          type="text"
+        />
+      </label>
+      <label class="filter-field">
+        <span class="filter-field__label"
+          >Work mode <code>work_mode</code></span
+        >
+        <input
+          v-model="model.work_mode"
+          autocomplete="off"
+          placeholder="Exact, e.g. remote"
+          type="text"
+        />
+      </label>
+      <label class="filter-field filter-field--number">
+        <span class="filter-field__label">Limit <code>limit</code></span>
+        <input v-model.number="model.limit" max="500" min="1" type="number" />
+      </label>
+      <label class="filter-field filter-field--number">
+        <span class="filter-field__label">Offset <code>offset</code></span>
+        <input v-model.number="model.offset" min="0" type="number" />
+      </label>
+      <button class="filter-reset" type="button" @click="$emit('clear')">
+        Reset
+      </button>
+    </div>
   </form>
 </template>
 
 <style lang="scss" scoped>
-@use '@globalStyle/variables' as *;
+@use "@globalStyle/variables" as *;
 
 .search-panel {
   display: flex;
-  min-height: 80px;
-  align-items: center;
-  gap: 15px;
+  flex-direction: column;
+  gap: 12px;
   padding: 12px;
   border: 1px solid rgba(48, 70, 55, 0.07);
   border-radius: 12px;
   background: $color-white;
   box-shadow: 0 14px 42px rgba(37, 52, 44, 0.08);
+}
+
+.search-panel__main {
+  display: flex;
+  min-height: 56px;
+  align-items: center;
+  gap: 15px;
 }
 
 .search-field {
@@ -101,14 +156,26 @@ defineEmits<{
 .search-field__body {
   display: flex;
   min-width: 0;
+  flex: 1;
   flex-direction: column;
   gap: 5px;
 }
 
-.search-field__label {
+.search-field__label,
+.filter-field__label {
   color: #3e5146;
   font-size: 11px;
   font-weight: 700;
+}
+
+code {
+  margin-left: 4px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: #f1f4ee;
+  color: #6c7b70;
+  font-size: 9px;
+  font-weight: 500;
 }
 
 .search-field input {
@@ -121,13 +188,10 @@ defineEmits<{
   font-size: 12px;
 }
 
-.search-field input::placeholder {
+.search-field input::placeholder,
+.filter-field input::placeholder {
   color: #929b95;
   opacity: 1;
-}
-
-.search-field input:focus-visible {
-  outline: 0;
 }
 
 .search-panel__divider {
@@ -136,17 +200,45 @@ defineEmits<{
   background: $color-border;
 }
 
-.arrangement-select {
-  flex: 0 0 auto;
+.search-panel__filters {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) 92px 92px auto;
+  align-items: end;
+  gap: 10px;
+  padding: 12px 8px 4px;
+  border-top: 1px solid $color-border;
 }
 
-.arrangement-select select {
-  max-width: 110px;
-  padding: 11px 20px 11px 8px;
-  border: 0;
-  background-color: transparent;
-  color: #59685e;
+.filter-field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.filter-field input {
+  width: 100%;
+  min-width: 0;
+  padding: 7px 8px;
+  border: 1px solid $color-border;
+  border-radius: 6px;
+  background: $color-white;
+  color: $color-ink;
   font-size: 11px;
+}
+
+.filter-field input:focus-visible {
+  border-color: $color-green;
+  outline: 0;
+}
+
+.filter-reset {
+  padding: 8px 6px;
+  border: 0;
+  background: transparent;
+  color: $color-green;
+  font-size: 11px;
+  font-weight: 650;
   cursor: pointer;
 }
 
@@ -165,7 +257,9 @@ defineEmits<{
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 160ms ease, transform 160ms ease;
+  transition:
+    background 160ms ease,
+    transform 160ms ease;
 }
 
 .search-button:hover {
@@ -173,16 +267,28 @@ defineEmits<{
   background: $color-green-dark;
 }
 
+@media (max-width: 900px) {
+  .search-panel__filters {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .filter-reset {
+    justify-self: start;
+  }
+}
+
 @media (max-width: 680px) {
   .search-panel {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px 9px;
     padding: 13px;
   }
 
+  .search-panel__main {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
   .search-field--keyword {
-    grid-column: 1 / -1;
     padding: 0 3px 10px;
     border-bottom: 1px solid $color-border;
   }
@@ -207,21 +313,14 @@ defineEmits<{
     display: none;
   }
 
-  .arrangement-select {
-    grid-column: 1;
-  }
-
-  .arrangement-select select {
-    max-width: 100%;
-    padding: 10px 2px;
-    font-size: 11px;
+  .search-panel__filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding-inline: 3px;
   }
 
   .search-button {
-    grid-column: 2;
-    grid-row: 3;
     min-height: 42px;
-    justify-self: end;
+    justify-self: stretch;
   }
 }
 </style>

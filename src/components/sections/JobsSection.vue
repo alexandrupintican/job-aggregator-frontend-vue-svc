@@ -1,43 +1,73 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import JobCard from '@/components/content/JobCard.vue'
-import JobsEmptyState from '@/components/content/JobsEmptyState.vue'
-import SectionEyebrow from '@/components/ui/SectionEyebrow.vue'
-import type { Job } from '@/models/job'
+import { computed } from "vue";
+import JobCard from "@/components/content/JobCard.vue";
+import JobsEmptyState from "@/components/content/JobsEmptyState.vue";
+import JobsErrorState from "@/components/content/JobsErrorState.vue";
+import JobsPager from "@/components/content/JobsPager.vue";
+import type { JobPageModel } from "@/models/JobService/jobPageModel";
 
 const props = defineProps<{
-  jobs: Job[]
-}>()
+  page: JobPageModel | null;
+  loading: boolean;
+  error: string | null;
+}>();
 
 defineEmits<{
-  clear: []
-}>()
+  clear: [];
+  retry: [];
+  page: [offset: number];
+}>();
 
-const resultLabel = computed(() => `${props.jobs.length} ${props.jobs.length === 1 ? 'role' : 'roles'}`)
+const jobs = computed(() => props.page?.getJobs() ?? []);
+const total = computed(() => props.page?.getTotal() ?? 0);
+
+const resultLabel = computed(() => {
+  if (props.loading) return "Loading…";
+  return `${total.value} ${total.value === 1 ? "role" : "roles"}`;
+});
 </script>
 
 <template>
-  <section class="jobs-section" aria-labelledby="jobs-heading">
+  <section
+    class="jobs-section"
+    aria-labelledby="jobs-heading"
+    :aria-busy="loading"
+  >
     <div class="section-heading">
       <div>
-        <SectionEyebrow muted>A good place to begin</SectionEyebrow>
-        <h2 id="jobs-heading">Open doors <span>right now</span></h2>
+        <h2 id="jobs-heading"><span>Aggregator results</span></h2>
       </div>
-      <span class="result-count">{{ resultLabel }}</span>
+      <span v-if="!error" class="result-count" aria-live="polite">{{
+        resultLabel
+      }}</span>
     </div>
 
-    <div v-if="jobs.length" class="job-list">
-      <JobCard v-for="job in jobs" :key="job.id" :job="job" />
-    </div>
-    <JobsEmptyState v-else @clear="$emit('clear')" />
-
-    <p class="demo-note">These are sample listings to help you explore. Live job feeds are coming soon.</p>
+    <JobsErrorState v-if="error" :message="error" @retry="$emit('retry')" />
+    <template v-else-if="page">
+      <div
+        v-if="jobs.length"
+        class="job-list"
+        :class="{ 'job-list--loading': loading }"
+      >
+        <JobCard v-for="job in jobs" :key="job.getId()" :job="job" />
+      </div>
+      <JobsEmptyState v-else @clear="$emit('clear')" />
+      <JobsPager
+        v-if="total"
+        :disabled="loading"
+        :limit="page.getLimit()"
+        :offset="page.getOffset()"
+        :shown="jobs.length"
+        :total="total"
+        @change="$emit('page', $event)"
+      />
+    </template>
   </section>
 </template>
 
 <style lang="scss" scoped>
-@use '@globalStyle/variables' as *;
-@use '@globalStyle/mixins' as *;
+@use "@globalStyle/variables" as *;
+@use "@globalStyle/mixins" as *;
 
 .jobs-section {
   @include content-width;
@@ -80,11 +110,9 @@ const resultLabel = computed(() => `${props.jobs.length} ${props.jobs.length ===
   gap: 11px;
 }
 
-.demo-note {
-  margin: 14px 0 0;
-  color: #8a948c;
-  font-size: 10px;
-  text-align: center;
+.job-list--loading {
+  opacity: 0.55;
+  transition: opacity 160ms ease;
 }
 
 @media (max-width: 680px) {
