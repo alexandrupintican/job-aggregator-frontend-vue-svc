@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "composite": false,
+    "ignoreDeprecations": "6.0"
+  },
+  "include": ["server.ts"],
+  "exclude": ["src", "node_modules", "dist"],
+  "ts-node": {
+    "transpileOnly": true
+  }
+}

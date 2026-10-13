@@ -1,0 +1,23 @@
+{
+    "eslint.validate": ["javascript", "typescript", "vue"],
+    "editor.formatOnSave": true,
+    "eslint.enable": true,
+    "editor.codeActionsOnSave": {
+        "source.fixAll": "explicit"
+    },
+    "editor.insertSpaces": true,
+    "prettier.enable": true,
+    "editor.tabSize": 4,
+    "search.exclude": {
+        "**/.git": true,
+        "**/node_modules": true,
+        "**/.history": true,
+        "**/dist": true,
+        "**/build": true,
+    },
+    "vue.inlayHints.inlineHandlerLeading": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "[vue]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    }
+}

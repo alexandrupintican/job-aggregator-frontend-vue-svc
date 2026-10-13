@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "noEmit": true,
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.tsbuildinfo",
+    "target": "esnext",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "lib": ["ESNext", "DOM"],
+    "esModuleInterop": true,
+    "strict": true,
+    "jsx": "preserve",
+    "sourceMap": true,
+    "resolveJsonModule": true,
+    "verbatimModuleSyntax": false,
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "types": ["vite/client"],
+  "include": [
+    "./src/**/*.ts",
+    "./src/**/*.vue",
+    "server.ts",
+    "vite.config.ts",
+    "./vite/**/*.ts"
+  ],
+  "exclude": ["node_modules", "dist"]
+}
