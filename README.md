@@ -40,12 +40,12 @@ A responsive job-search frontend built with **Vue 3**, **TypeScript**, **Vite**,
 │   ├── assets/
 │   │   └── style/        # Global SCSS partials
 │   ├── components/
-│   │   ├── content/      # JobCard, JobSearchForm, RequestPreview, JobsPager, states
+│   │   ├── content/      # JobCard, JobFilterForm, CollectorPreferencesForm, RequestPreview, JobsPager, states
 │   │   ├── footer/
 │   │   ├── header/
-│   │   ├── sections/     # HeroSection, JobsSection
+│   │   ├── sections/     # HeroSection, JobFiltersSection, JobsSection
 │   │   └── ui/           # BrandLogo, TextButton
-│   ├── composables/      # useJobSearch, usePages
+│   ├── composables/      # useJobFilters, useCollectorConfig, usePages
 │   ├── layouts/
 │   ├── models/
 │   │   └── JobService/   # Read-only model classes wrapping API responses
@@ -155,7 +155,7 @@ The search form exposes every query parameter of `GET /api/jobs`. Each field is 
 
 - **Pages** are thin compositions of section components. The router has a single catch-all route; `views/PageView.vue` picks the page from state (`usePages`), so the URL never changes.
 - **Components** are split into `sections/` (page-level blocks), `content/` (reusable blocks), and `ui/` (small shared primitives). Each owns its scoped styles.
-- **Composables** hold the logic. `useJobSearch` keeps the query bound to the form, calls the API on search, and exposes the current page, loading, and error state.
+- **Composables** hold the logic. `useJobFilters` keeps the filters bound to the form, calls the API when they are applied, and exposes the current page, loading, and error state. `useCollectorConfig` loads and saves the collector preferences.
 - **API** (`src/api/api.ts`) wraps `fetch`, prefixes requests with `VITE_API_URL`, and exposes `jobService.getJobs(query)`.
 - **Models** (`src/models/JobService/`) are read-only classes around API responses (`JobPageModel`, `JobListingModel`, …) with `getX()` methods. `JobListingQueryModel` builds the query string.
 - **Types** (`src/types/models/jobListings.d.ts`) describe the raw API payloads.

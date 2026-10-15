@@ -4,12 +4,15 @@ import JobCard from "@/components/content/JobCard.vue";
 import JobsEmptyState from "@/components/content/JobsEmptyState.vue";
 import JobsErrorState from "@/components/content/JobsErrorState.vue";
 import JobsPager from "@/components/content/JobsPager.vue";
+import Spinner from "@/components/ui/Spinner.vue";
 import type { JobPageModel } from "@/models/JobService/jobPageModel";
 
 const props = defineProps<{
   page: JobPageModel | null;
   loading: boolean;
   error: string | null;
+  /** A collector run is in progress; the results refresh when it finishes. */
+  collecting?: boolean;
 }>();
 
 defineEmits<{
@@ -37,7 +40,15 @@ const resultLabel = computed(() => {
       <div>
         <h2 id="jobs-heading"><span>Aggregator results</span></h2>
       </div>
-      <span v-if="!error" class="result-count" aria-live="polite">{{
+      <span
+        v-if="collecting"
+        class="result-count result-count--collecting"
+        aria-live="polite"
+      >
+        <Spinner :size="12" />
+        Collecting new listings…
+      </span>
+      <span v-else-if="!error" class="result-count" aria-live="polite">{{
         resultLabel
       }}</span>
     </div>
@@ -103,6 +114,12 @@ const resultLabel = computed(() => {
   color: #65766a;
   font-size: 11px;
   font-weight: 600;
+}
+
+.result-count--collecting {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
 }
 
 .job-list {

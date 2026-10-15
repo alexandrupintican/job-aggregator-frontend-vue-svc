@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import TextButton from '@/components/ui/TextButton.vue'
 
-defineProps<{
-  message: string
-}>()
+withDefaults(
+  defineProps<{
+    message: string
+    title?: string
+  }>(),
+  { title: "Couldn't load jobs" },
+)
 
 defineEmits<{
   retry: []
@@ -13,7 +17,7 @@ defineEmits<{
 <template>
   <div class="error-state" role="alert">
     <span class="error-state__icon" aria-hidden="true">!</span>
-    <h3>Couldn't load jobs</h3>
+    <h3>{{ title }}</h3>
     <p>{{ message }}</p>
     <TextButton @click="$emit('retry')">Try again</TextButton>
   </div>

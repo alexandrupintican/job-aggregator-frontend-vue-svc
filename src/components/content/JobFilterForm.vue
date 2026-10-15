@@ -1,17 +1,18 @@
 <script setup lang="ts">
+import FormField from "@/components/ui/FormField.vue";
 import type { JobListingQuery } from "@/types/models/jobListings";
 
 const model = defineModel<JobListingQuery>({ required: true });
 
 defineEmits<{
-  search: [];
+  apply: [];
   clear: [];
 }>();
 </script>
 
 <template>
-  <form class="search-panel" role="search" @submit.prevent="$emit('search')">
-    <div class="search-panel__main">
+  <form class="filter-panel" @submit.prevent="$emit('apply')">
+    <div class="filter-panel__main">
       <label class="search-field search-field--keyword">
         <span class="search-field__icon" aria-hidden="true">⌕</span>
         <span class="search-field__body">
@@ -24,7 +25,7 @@ defineEmits<{
           />
         </span>
       </label>
-      <span class="search-panel__divider" aria-hidden="true"></span>
+      <span class="filter-panel__divider" aria-hidden="true"></span>
       <label class="search-field search-field--location">
         <span
           class="search-field__icon search-field__icon--pin"
@@ -43,59 +44,51 @@ defineEmits<{
           />
         </span>
       </label>
-      <button class="search-button" type="submit">
-        <span>Find jobs</span>
+      <button class="filter-apply" type="submit">
+        <span>Apply filters</span>
         <span aria-hidden="true">↗</span>
       </button>
     </div>
 
-    <div class="search-panel__filters">
-      <label class="filter-field">
-        <span class="filter-field__label">Company <code>company</code></span>
+    <div class="filter-panel__filters">
+      <FormField label="Company" name="company">
         <input
           v-model="model.company"
           autocomplete="off"
           placeholder="Exact, e.g. GitLab"
           type="text"
         />
-      </label>
-      <label class="filter-field">
-        <span class="filter-field__label">Source <code>source</code></span>
+      </FormField>
+      <FormField label="Source" name="source">
         <input
           v-model="model.source"
           autocomplete="off"
           placeholder="Exact, e.g. ashby:n8n"
           type="text"
         />
-      </label>
-      <label class="filter-field">
-        <span class="filter-field__label">Status <code>status</code></span>
+      </FormField>
+      <FormField label="Status" name="status">
         <input
           v-model="model.status"
           autocomplete="off"
           placeholder="Exact, e.g. match"
           type="text"
         />
-      </label>
-      <label class="filter-field">
-        <span class="filter-field__label"
-          >Work mode <code>work_mode</code></span
-        >
+      </FormField>
+      <FormField label="Work mode" name="work_mode">
         <input
           v-model="model.work_mode"
           autocomplete="off"
           placeholder="Exact, e.g. remote"
           type="text"
         />
-      </label>
-      <label class="filter-field filter-field--number">
-        <span class="filter-field__label">Limit <code>limit</code></span>
+      </FormField>
+      <FormField label="Limit" name="limit">
         <input v-model.number="model.limit" max="500" min="1" type="number" />
-      </label>
-      <label class="filter-field filter-field--number">
-        <span class="filter-field__label">Offset <code>offset</code></span>
+      </FormField>
+      <FormField label="Offset" name="offset">
         <input v-model.number="model.offset" min="0" type="number" />
-      </label>
+      </FormField>
       <button class="filter-reset" type="button" @click="$emit('clear')">
         Reset
       </button>
@@ -106,7 +99,7 @@ defineEmits<{
 <style lang="scss" scoped>
 @use "@globalStyle/variables" as *;
 
-.search-panel {
+.filter-panel {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -117,7 +110,7 @@ defineEmits<{
   box-shadow: 0 14px 42px rgba(37, 52, 44, 0.08);
 }
 
-.search-panel__main {
+.filter-panel__main {
   display: flex;
   min-height: 56px;
   align-items: center;
@@ -161,8 +154,7 @@ defineEmits<{
   gap: 5px;
 }
 
-.search-field__label,
-.filter-field__label {
+.search-field__label {
   color: #3e5146;
   font-size: 11px;
   font-weight: 700;
@@ -188,48 +180,24 @@ code {
   font-size: 12px;
 }
 
-.search-field input::placeholder,
-.filter-field input::placeholder {
+.search-field input::placeholder {
   color: #929b95;
   opacity: 1;
 }
 
-.search-panel__divider {
+.filter-panel__divider {
   width: 1px;
   height: 36px;
   background: $color-border;
 }
 
-.search-panel__filters {
+.filter-panel__filters {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr)) 92px 92px auto;
   align-items: end;
   gap: 10px;
   padding: 12px 8px 4px;
   border-top: 1px solid $color-border;
-}
-
-.filter-field {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.filter-field input {
-  width: 100%;
-  min-width: 0;
-  padding: 7px 8px;
-  border: 1px solid $color-border;
-  border-radius: 6px;
-  background: $color-white;
-  color: $color-ink;
-  font-size: 11px;
-}
-
-.filter-field input:focus-visible {
-  border-color: $color-green;
-  outline: 0;
 }
 
 .filter-reset {
@@ -242,7 +210,7 @@ code {
   cursor: pointer;
 }
 
-.search-button {
+.filter-apply {
   display: inline-flex;
   min-height: 48px;
   flex: 0 0 auto;
@@ -262,13 +230,13 @@ code {
     transform 160ms ease;
 }
 
-.search-button:hover {
+.filter-apply:hover {
   transform: translateY(-1px);
   background: $color-green-dark;
 }
 
 @media (max-width: 900px) {
-  .search-panel__filters {
+  .filter-panel__filters {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
@@ -278,11 +246,11 @@ code {
 }
 
 @media (max-width: 680px) {
-  .search-panel {
+  .filter-panel {
     padding: 13px;
   }
 
-  .search-panel__main {
+  .filter-panel__main {
     display: grid;
     grid-template-columns: 1fr;
     gap: 12px;
@@ -309,16 +277,16 @@ code {
     font-size: 11px;
   }
 
-  .search-panel__divider {
+  .filter-panel__divider {
     display: none;
   }
 
-  .search-panel__filters {
+  .filter-panel__filters {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     padding-inline: 3px;
   }
 
-  .search-button {
+  .filter-apply {
     min-height: 42px;
     justify-self: stretch;
   }

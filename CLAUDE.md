@@ -31,8 +31,8 @@ The URL never changes. Note that `HomePage.vue` also wraps itself in `layouts/De
 **Component conventions.** The full playbook, with examples, is in the `vue-frontend-patterns` skill (`.claude/skills/vue-frontend-patterns/SKILL.md`). Keep pages thin. A page only wires composable state into section components; it holds no large inline markup.
 
 - Every distinct section or block goes in its own `.vue` file so that a change to it shows up everywhere it is reused. `HomePage.vue` follows this pattern.
-- Page-level sections go in `components/sections/`, e.g. `HeroSection`, `JobsSection`.
-- Smaller reusable pieces go in `components/content/`, e.g. `JobCard`, `JobSearchForm`, `RequestPreview`, `JobsPager`, `JobsEmptyState`, `JobsErrorState`.
+- Page-level sections go in `components/sections/`, e.g. `HeroSection` (collector preferences), `JobFiltersSection`, `JobsSection`.
+- Smaller reusable pieces go in `components/content/`, e.g. `JobCard`, `JobFilterForm`, `CollectorPreferencesForm`, `RequestPreview`, `JobsPager`, `JobsEmptyState`, `JobsErrorState`.
 - Shared building blocks go in `components/ui/`, e.g. `BrandLogo`, `TextButton`.
 - Components receive data through props or `defineModel` and report back through emits. They don't call page composables themselves.
 - Each component owns its styles in `<style lang="scss" scoped>`, including its media queries (breakpoints are 1400/900/680px).
@@ -51,7 +51,8 @@ Only stored `ref`/`reactive` values are reactive, and `initVault` uses `inject`,
 **Job search data.** Listings come from the Jobs Listing API (a separate Go service, `go run ./cmd/jobs-api`), which serves an exported `jobs.json` at `VITE_API_URL` (`.env`, default `http://localhost:8000`). Its spec is at `/openapi.json` and Swagger UI at `/docs`.
 
 - `GET /api/jobs` accepts only `limit` (1–500, server default 100), `offset`, `status`, `source`, `company`, `location`, `work_mode` and `q`, and silently ignores anything else. Every filter except `q` is a case-insensitive exact match. Invalid pagination returns 400. The response is `{ total, limit, offset, jobs }`.
-- `composables/useJobSearch.ts` holds the query as `criteria` (the live form model; the form has one field per parameter) and only calls the API when `search()` runs, so results change on submit, not as the user types. `requestPath` previews the exact request from the draft. It also exposes `page`, `loading`, `error`, `goToOffset()` and `clearSearch()`, runs the first search on creation, and discards responses from superseded requests.
+- `composables/useJobFilters.ts` filters the collector's latest export through `getJobs`. It holds the query as `filters` (the live form model; the form has one field per parameter) and only calls the API when `applyFilters()` runs, so results change on submit, not as the user types. `requestPath` previews the exact request from the draft. It also exposes `page`, `loading`, `error`, `goToOffset()` and `clearFilters()`, runs the first request on creation, and discards responses from superseded requests.
+- `composables/useCollectorConfig.ts` loads `GET /api/config` and exposes its `preferences` as the hero form model. `save()` sends the whole config back through `updateConfig` (PUT replaces the file) with only `preferences` changed. New preferences only affect results after the next collector run.
 - `page` is a `shallowRef`: `ref()` strips the model classes' private fields from the type.
 - The composable does _not_ use the vault, so its state is per component instance.
 - `models/job.ts` and `models/jobs.ts` are the old sample data and are unused.
