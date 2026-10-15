@@ -1,33 +1,38 @@
+import { JobExtractorClient } from "@/client/job-aggregator-svc";
 import JobListingQueryModel from "@/models/JobService/jobListingQueryModel";
 import { JobPageModel } from "@/models/JobService/jobPageModel";
-import { JobPage } from "@/types/models/jobListings";
+import type { JobPage } from "@/types/models/jobListings";
 import { getEnvVariable } from "@/utils/utils";
 
 export const JOBS_ENDPOINT = "/api/jobs";
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(
-    `${getEnvVariable("VITE_API_URL")}${path}`,
-    init,
-  );
-
-  if (!response.ok) {
-    throw new Error(`Request to ${path} failed with status ${response.status}`);
-  }
-
-  return response.json() as Promise<T>;
+/** The client appends empty strings as `param=`; drop them like the request preview does. */
+function optional(value: string | undefined): string | undefined {
+  return value || undefined;
 }
 
-async function runRequest<T>(endpoint: string): Promise<T> {
-  return request<T>(endpoint);
-}
+// Shared by every service client. Wrapped so `fetch` is never called detached from `window` ("Illegal invocation").
+const http = {
+  fetch: (url: RequestInfo, init?: RequestInit) => globalThis.fetch(url, init),
+};
 
 function createJobService() {
+  const client = new JobExtractorClient(getEnvVariable("VITE_API_URL"), http);
+
   const jobService = {
-    getJobs: async (query: JobListingQueryModel): Promise<JobPageModel> =>
-      new JobPageModel(
-        await runRequest<JobPage>(`${JOBS_ENDPOINT}${query.getQueryString()}`),
-      ),
+    getJobs: async (query: JobListingQueryModel): Promise<JobPageModel> => {
+      const result = await client.jobs(
+        query.getLimit(),
+        query.getOffset(),
+        optional(query.getStatus()),
+        optional(query.getSource()),
+        optional(query.getCompany()),
+        optional(query.getLocation()),
+        optional(query.getWorkMode()),
+        optional(query.getQ()),
+      );
+      return new JobPageModel(result.toJSON() as JobPage);
+    },
   };
   return jobService;
 }
