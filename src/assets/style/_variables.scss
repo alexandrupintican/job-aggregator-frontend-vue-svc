@@ -1,11 +1,31 @@
-$color-ink: #25342c;
-$color-muted: #7d8980;
-$color-green: #315c49;
-$color-green-dark: #274a3a;
-$color-lime: #d5f078;
-$color-paper: #f7f8f5;
+// COLORS
+$color-primary: #1b1b1b;
+$color-secondary: #888;
 $color-white: #fff;
-$color-border: #e7e9e4;
-$font-display: 'DM Serif Display', Georgia, serif;
-$font-body: 'DM Sans', 'Avenir Next', sans-serif;
-$content-width: 1120px;
+$color-black: #000;
+$color-accent-1: #455eb5;
+$color-accent-2: #673fd7;
+$color-surface: #15151d;
+$color-text-muted: #a1a1aa;
+
+// FONTS
+$font-family-primary: "Italian Plate No2 Expanded", serif;
+$font-base: 14px !default;
+
+// SIZES
+$container-max-width: 1920px;
+$footer-height: 80px;
+$header-height: 80px;
+
+// GRID
+$grid-columns: 12;
+$grid-gap: 15px !default;
+$grid-margin: 20px;
+
+// BREAKPOINTS
+$breakpoints: (
+  xs: 480px,
+  sm: 768px,
+  md: 960px,
+  lg: 1280px,
+);

@@ -22,9 +22,15 @@ withDefaults(
 .spinner {
   display: inline-block;
   flex: 0 0 auto;
-  border: 2px solid #d7e2d0;
-  border-top-color: $color-green;
+  border: 2px solid var(--border);
+  border-top-color: var(--color-accent-1);
   border-radius: 50%;
   animation: spin 800ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>

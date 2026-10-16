@@ -4,7 +4,9 @@ import JobsErrorState from "@/components/content/JobsErrorState.vue";
 import type { CollectorPreferences } from "@/types/models/jobListings";
 
 // Null until the config has loaded.
-const preferences = defineModel<CollectorPreferences | null>({ required: true });
+const preferences = defineModel<CollectorPreferences | null>({
+  required: true,
+});
 
 defineProps<{
   loading: boolean;
@@ -60,22 +62,37 @@ defineEmits<{
   min-height: 300px;
   padding: 64px 24px 48px;
   overflow: hidden;
-  background: #eaf0e6;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-accent-1) 18%, var(--background)),
+    color-mix(in srgb, var(--color-accent-2) 18%, var(--background))
+  );
 }
 
 .hero__inner {
   position: relative;
   z-index: 1;
-  width: min(100%, 920px);
+  width: min(100%, 1280px);
   margin-inline: auto;
   animation: rise-in 550ms ease both;
 }
 
 .hero__loading {
   margin: 0;
-  color: #68766d;
-  font-size: 13px;
+  color: var(--text-muted);
   text-align: center;
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (max-width: 900px) {

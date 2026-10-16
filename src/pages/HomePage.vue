@@ -11,7 +11,6 @@ const {
   page,
   loading,
   error,
-  requestPath,
   applyFilters,
   goToOffset,
   clearFilters,
@@ -37,7 +36,7 @@ const {
 </script>
 
 <template>
-  <DefaultLayout>
+  <DefaultLayout class="content">
     <HeroSection
       v-model="preferences"
       :error="configError"
@@ -54,7 +53,6 @@ const {
     />
     <JobFiltersSection
       v-model="filters"
-      :request-path="requestPath"
       @apply="applyFilters"
       @clear="clearFilters"
     />
@@ -69,3 +67,9 @@ const {
     />
   </DefaultLayout>
 </template>
+
+<style lang="scss" scoped>
+.content {
+  min-height: var(--content-height);
+}
+</style>

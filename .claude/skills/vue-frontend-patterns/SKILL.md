@@ -13,14 +13,14 @@ This app is a Vue 3 SPA built with `<script setup lang="ts">`, Vite and SCSS. It
 | --- | --- | --- |
 | Page: a thin composition of sections | `src/pages/` | `HomePage.vue` |
 | Page-level section | `src/components/sections/` | `HeroSection`, `JobFiltersSection`, `JobsSection` |
-| Reusable content block | `src/components/content/` | `JobCard`, `JobFilterForm`, `CollectorPreferencesForm`, `JobsPager`, `RequestPreview`, `JobsEmptyState`, `JobsErrorState` |
-| Small shared UI primitive | `src/components/ui/` | `BrandLogo`, `TextButton` |
+| Reusable content block | `src/components/content/` | `JobCard`, `JobFilterForm`, `CollectorPreferencesForm`, `JobsPager`, `JobsEmptyState`, `JobsErrorState` |
+| Small shared UI primitive | `src/components/ui/` | `BrandLogo`, `TextButton`, `PrimaryButton`, `Spinner`, `FormField`, `ListField` |
 | App shell | `src/components/header/`, `src/components/footer/`, `src/layouts/` | `AppHeader`, `DefaultLayout` |
 | Composition logic | `src/composables/` | `useJobFilters`, `useCollectorConfig`, `usePages` |
 | API service | `src/api/` | `api.ts` (`jobService.getJobs`) |
 | Read-only model classes, one per file | `src/models/JobService/` | `JobPageModel`, `JobListingModel`, `JobListingQueryModel` |
 | Raw API types, all in one file | `src/types/models/jobListings.d.ts` | `JobListing`, `JobPage`, `JobListingQuery` |
-| Global SCSS partials | `src/assets/style/` (alias `@globalStyle`) | `_variables`, `_mixins`, `_animations` |
+| Global SCSS partials | `src/assets/style/` (alias `@globalStyle`) | `_variables`, `_theme`, `_mixins`, `global.scss` |
 
 Use the `@/` alias for imports from `src`.
 
@@ -41,7 +41,6 @@ const {
   page,
   loading,
   error,
-  requestPath,
   applyFilters,
   goToOffset,
   clearFilters,
@@ -52,7 +51,6 @@ const {
   <DefaultLayout>
     <JobFiltersSection
       v-model="filters"
-      :request-path="requestPath"
       @apply="applyFilters"
       @clear="clearFilters"
     />
@@ -72,7 +70,7 @@ Rules for components:
 
 - **Data in through props or `defineModel`, intent out through `defineEmits`.** Sections and content blocks don't call page composables such as `useJobFilters` themselves. Composable state is per-instance unless it's vault-backed, so a section that called it would get its own disconnected copy. Taking props also keeps the component reusable on other pages.
 - **Forward events up rather than handling them in the middle.** `JobsSection` re-emits `clear` from `JobsEmptyState`, `retry` from `JobsErrorState` and `page` (the new offset) from `JobsPager`, and the page decides what each one means.
-- **Prefer a component to a shared class.** If two components need the same styled markup, extract a `ui/` component with props for the variants. For example, `<BrandLogo compact />` is the footer's smaller logo, and `TextButton` is the link-style button shared by `JobsEmptyState` ("Clear your search") and `JobsErrorState` ("Try again").
+- **Prefer a component to a shared class.** If two components need the same styled markup, extract a `ui/` component with props for the variants. For example, `<BrandLogo compact />` is the footer's smaller logo, `PrimaryButton` is the filled call-to-action used for Apply filters, Save preferences and View listing (pass `href` for a link; `target`, `rel` and `aria-label` fall through), and `TextButton` is the link-style button shared by `JobsEmptyState` ("Clear your search") and `JobsErrorState` ("Try again").
 - Use typed macros: `defineProps<{ job: JobListingModel }>()`, and `withDefaults(...)` for optional booleans.
 - Non-prop attributes fall through to the root element. For example, `aria-label` on `BrandLogo` lands on its `RouterLink`.
 
@@ -83,27 +81,40 @@ Each component owns its styles in a scoped SCSS block in the same file. That inc
 ```vue
 <style lang="scss" scoped>
 @use "@globalStyle/variables" as *;
-@use "@globalStyle/mixins" as *; /* only if you use content-width / focus-ring */
 
 .jobs-section {
-  @include content-width;
+  width: calc(100% - 48px);
+  margin-inline: auto;
   padding-top: 67px;
+  color: var(--text);
 }
 
 @media (max-width: 680px) {
   .jobs-section {
-    width: min(calc(100% - 36px), $content-width);
+    width: calc(100% - 36px);
   }
 }
 </style>
 ```
 
-- **Import the partials yourself.** `scss.preprocessorOptions` doesn't inject anything automatically, so every block that uses `$color-*`, `$font-*` or `$content-width` needs the `@use` line.
-- **Use the existing tokens.** Colors are `$color-ink`, `$color-muted`, `$color-green`, `$color-green-dark`, `$color-lime`, `$color-paper`, `$color-white` and `$color-border`. Fonts are `$font-display` (serif headings) and `$font-body`. Mixins are `content-width` and `focus-ring`. One-off tints are written inline as hex, as the existing components do.
-- **Breakpoints in CSS are 1400px, 900px and 680px.** The `max-width: 680px` breakpoint is the mobile layout.
+- **Import the partials yourself.** `scss.preprocessorOptions` doesn't inject anything automatically, so every block that uses `$` variables needs the `@use` line. Don't `@use` `mixins` in a component: `_mixins.scss` emits the grid `.col--N`/`.row--N` classes, so each import duplicates them.
+- **Use the theme tokens.** `_theme.scss` exposes the palette as CSS custom properties on `:root`. Prefer them over raw `$` values: `--text`, `--text-muted`, `--background`, `--surface` (cards and panels), `--border`, `--color-accent-1` (primary actions and links), `--color-accent-2` (hover), `--color-secondary`, `--color-white`, `--font-family-primary`, plus `--header-height`, `--footer-height` and `--content-height`. The theme is dark. Write one-off tints as `color-mix(in srgb, var(--color-accent-1) 15%, transparent)` or as low-alpha `rgba`.
+- **Don't set `font-size` or `letter-spacing` in components.** Typography comes from the HTML tag. Titles are `h1`/`h2`, sized in `global.scss`; that includes card and empty/error-state titles. Don't use `h3`, which has no theme size. Standalone text is `p`. Inline `span`s inherit the root size from `_theme.scss`. Labels and hints inside a `<label>` stay `span`, because `p` isn't valid there. If something needs a new size, add a tag rule to the theme rather than a component override. The one exception is `font-size: inherit` in `PrimaryButton`, which makes its `<a>` and `<button>` forms match, because browsers render buttons at ~13px.
+- **Lay out blocks with the theme grid; use flex only when it's needed.** Put `.grid` (12 columns, 15px gap, from `global.scss`) on the container and column classes on the children: `col--N` everywhere, plus responsive `col__xs--N`, `col__sm--N`, `col__md--N` and `col__lg--N`. The responsive classes are mobile-first and apply from 481, 769, 961 and 1281px up, so they usually replace hand-written media queries. `.grid` has a `20px 0` margin; zero it with a scoped rule when the parent already pads. Classes on a child component fall through to its root, so `<FormField class="col--12 col__md--3">` works. Keep flex for a single row that needs alignment, such as right-aligned buttons. Stack things vertically with `display: grid; gap`, not `flex-direction: column`.
+
+  ```vue
+  <div class="filter-panel__grid grid">
+    <FormField class="col--12 col__sm--6" label="Search" name="q">…</FormField>
+    <FormField class="col--12 col__xs--6 col__md--3" label="Company" name="company">…</FormField>
+    <div class="filter-panel__actions col--12 col__md--8">…buttons…</div>
+  </div>
+  ```
+
+- **Every form input goes through `FormField` (or `ListField` for comma-separated lists).** Don't hand-roll label and input markup. `FormField` provides the label, the API-name `code` chip, the input styling and an optional `hint`. `ListField` passes no hint.
+- **Component breakpoints are `max-width` 900px and 680px.** The 680px breakpoint is the mobile layout. `global.scss` scales the root font and headings at 1024px. Prefer the grid's responsive column classes over new media queries.
 - **Name classes BEM-style after the component**, e.g. `.job-card`, `.job-card__title-row`, `.job-card__company-mark--peach`. Modifier classes can come from data: ``:class="`job-card__status--${status}`"``.
-- **Keep `src/assets/style/main.scss` global-only.** It holds the reset, base element styles, `.sr-only` and the reduced-motion override. Don't add component classes to it.
-- **Put keyframes in `_animations.scss`.** They're global, so scoped blocks can reference them, e.g. `animation: rise-in 350ms ease both`.
+- **Keep `src/assets/style/global.scss` global-only.** It holds base element styles plus the `.grid` and `.button` helpers. Don't add component classes to it. It has no box-sizing reset, so set `box-sizing: border-box` on anything that combines `width: 100%` with padding.
+- **Declare keyframes in the component that uses them.** There is no global keyframes file, so put `@keyframes rise-in { … }` in the same scoped block.
 - Scoped styles don't reach into child components. To restyle a child, give it a prop or variant rather than using `:deep()`.
 
 ## 3. Adding a page: state-driven, not routed
@@ -179,7 +190,7 @@ If the state is local to one component tree, don't use the vault. A plain compos
 
 ## 5. Plain composables
 
-`src/composables/useJobFilters.ts` is the model for a non-shared composable. It's a named export that returns refs, computeds and functions. It keeps **draft vs sent** state: `filters` (a `JobListingQuery`) is the live form model bound with `v-model`, and a request only goes out when `applyFilters()` runs. `requestPath` is computed from the draft so the form can preview the exact request, but results only change on submit, not on every keystroke. Keep that split if you extend filtering. Filtering as you type would be a behavior change to raise with the user.
+`src/composables/useJobFilters.ts` is the model for a non-shared composable. It's a named export that returns refs, computeds and functions. It keeps **draft vs sent** state: `filters` (a `JobListingQuery`) is the live form model bound with `v-model`, and a request only goes out when `applyFilters()` runs. Results only change on submit, not on every keystroke. Keep that split if you extend filtering. Filtering as you type would be a behavior change to raise with the user.
 
 What it returns:
 
@@ -195,7 +206,7 @@ Requests are numbered, and only the latest one may write `page`, `loading` or `e
 All backend access goes through `src/api/api.ts`. Its default export holds the services, e.g. `api.jobService.getJobs(query)`.
 
 - `request()` prefixes the path with `VITE_API_URL` and throws an `Error` on any non-2xx status. The URL is read through `getEnvVariable` in `src/utils/utils.ts`, and only `VITE_`-prefixed variables reach the client.
-- `getJobs(query: JobListingQueryModel)` calls `${JOBS_ENDPOINT}${query.getQueryString()}` and wraps the JSON in a `JobPageModel`. `JOBS_ENDPOINT` (`/api/jobs`) is exported so the request preview uses the same path.
+- `getJobs(query: JobListingQueryModel)` calls `${JOBS_ENDPOINT}${query.getQueryString()}` and wraps the JSON in a `JobPageModel`.
 - Call services from a composable, never from a component, and turn errors into state there.
 - The endpoint accepts only `limit`, `offset`, `status`, `source`, `company`, `location`, `work_mode` and `q`, and silently ignores any other parameter. `status`, `source`, `company`, `location` and `work_mode` are case-insensitive exact matches. An out-of-range `limit` or `offset` returns a 400. The spec is at `/openapi.json` on the API host.
 
@@ -230,7 +241,7 @@ They share one module-level `resize` listener and aren't installed as a Vue plug
   - Single quotes and no semicolons: `useJobFilters`, `JobCard`, `JobsPager`, `JobsEmptyState`, `JobsErrorState` and `AppHeader`.
   - Double quotes and semicolons: `api.ts`, the `JobService` models, `HomePage`, `HeroSection`, `JobsSection`, `JobFilterForm`, `AppFooter`, the plugins, router, vault, `usePages` and `PageView`.
   - Don't reformat files you aren't otherwise changing.
-- Templates use PascalCase component tags. Use `aria-hidden="true"` on decorative glyphs and an `aria-label` or `.sr-only` text on icon-only controls, as the existing components do.
+- Templates use PascalCase component tags. Use `aria-hidden="true"` on decorative glyphs and an `aria-label` on icon-only controls, as the existing components do.
 
 ## Checking your work
 
