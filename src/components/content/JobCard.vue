@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import type { JobListingModel } from '@/models/JobService/jobListingModel'
+import { computed } from "vue";
+import type { JobListingModel } from "@/models/JobService/jobListingModel";
 
 const props = defineProps<{
-  job: JobListingModel
-}>()
+  job: JobListingModel;
+}>();
 
-const MARK_COLORS = ['lavender', 'peach', 'mint', 'blue', 'yellow', 'rose']
-const DESCRIPTION_LENGTH = 220
+const MARK_COLORS = ["lavender", "peach", "mint", "blue", "yellow", "rose"];
+const DESCRIPTION_LENGTH = 220;
 
 const initials = computed(() =>
   props.job
@@ -16,71 +16,98 @@ const initials = computed(() =>
     .filter(Boolean)
     .slice(0, 2)
     .map((word) => word[0].toUpperCase())
-    .join(''),
-)
+    .join(""),
+);
 
 const markColor = computed(() => {
-  const hash = [...props.job.getCompany()].reduce((sum, char) => sum + char.charCodeAt(0), 0)
-  return MARK_COLORS[hash % MARK_COLORS.length]
-})
+  const hash = [...props.job.getCompany()].reduce(
+    (sum, char) => sum + char.charCodeAt(0),
+    0,
+  );
+  return MARK_COLORS[hash % MARK_COLORS.length];
+});
 
 const posted = computed(() => {
-  const publishedAt = props.job.getPublishedAt()
+  const publishedAt = props.job.getPublishedAt();
   if (!publishedAt) {
-    return ''
+    return "";
   }
 
-  const days = Math.floor((Date.now() - publishedAt.getTime()) / 86_400_000)
-  if (days <= 0) return 'Today'
-  if (days === 1) return '1 day ago'
-  return `${days} days ago`
-})
+  const days = Math.floor((Date.now() - publishedAt.getTime()) / 86_400_000);
+  if (days <= 0) return "Today";
+  if (days === 1) return "1 day ago";
+  return `${days} days ago`;
+});
 
 // The API returns the source board's HTML; show it as plain text instead of rendering it.
 const summary = computed(() => {
-  const text = new DOMParser()
-    .parseFromString(props.job.getDescription(), 'text/html')
-    .body.textContent?.replace(/\s+/g, ' ')
-    .trim() ?? ''
-  return text.length > DESCRIPTION_LENGTH ? `${text.slice(0, DESCRIPTION_LENGTH).trimEnd()}…` : text
-})
+  const text =
+    new DOMParser()
+      .parseFromString(props.job.getDescription(), "text/html")
+      .body.textContent?.replace(/\s+/g, " ")
+      .trim() ?? "";
+  return text.length > DESCRIPTION_LENGTH
+    ? `${text.slice(0, DESCRIPTION_LENGTH).trimEnd()}…`
+    : text;
+});
 
-const contractTypes = computed(() => props.job.getContractTypes().join(', '))
-const status = computed(() => props.job.getAssessment().getStatus())
+const contractTypes = computed(() => props.job.getContractTypes().join(", "));
+const status = computed(() => props.job.getAssessment().getStatus());
 </script>
 
 <template>
   <article class="job-card">
-    <div class="job-card__company-mark" :class="`job-card__company-mark--${markColor}`">
+    <div
+      class="job-card__company-mark"
+      :class="`job-card__company-mark--${markColor}`"
+    >
       {{ initials }}
     </div>
     <div class="job-card__main">
       <div class="job-card__title-row">
         <h3>
-          <a :href="job.getUrl()" rel="noopener noreferrer" target="_blank">{{ job.getTitle() }}</a>
+          <a :href="job.getUrl()" rel="noopener noreferrer" target="_blank">{{
+            job.getTitle()
+          }}</a>
         </h3>
         <span v-if="posted" class="job-card__posted">{{ posted }}</span>
       </div>
-      <p class="job-card__company">{{ job.getCompany() }} <span>·</span> {{ job.getLocation() }}</p>
+      <p class="job-card__company">
+        {{ job.getCompany() }} <span>·</span> {{ job.getLocation() }}
+      </p>
       <p class="job-card__description">{{ summary }}</p>
       <div class="job-card__tags">
-        <span v-for="term in job.getAssessment().getMatchedTerms()" :key="term">{{ term }}</span>
+        <span
+          v-for="term in job.getAssessment().getMatchedTerms()"
+          :key="term"
+          >{{ term }}</span
+        >
       </div>
     </div>
     <div class="job-card__details">
-      <span class="job-card__status" :class="`job-card__status--${status}`">{{ status }}</span>
+      <span class="job-card__status" :class="`job-card__status--${status}`">{{
+        status
+      }}</span>
       <span class="job-card__arrangement">{{ job.getWorkMode() }}</span>
-      <span v-if="contractTypes" class="job-card__type">{{ contractTypes }}</span>
-      <span v-if="job.getCompensation()" class="job-card__salary">{{ job.getCompensation() }}</span>
+      <span v-if="contractTypes" class="job-card__type">{{
+        contractTypes
+      }}</span>
+      <span v-if="job.getCompensation()" class="job-card__salary">{{
+        job.getCompensation()
+      }}</span>
     </div>
-    <button class="job-card__save" type="button" :aria-label="`Save ${job.getTitle()} at ${job.getCompany()}`">
+    <button
+      class="job-card__save"
+      type="button"
+      :aria-label="`Save ${job.getTitle()} at ${job.getCompany()}`"
+    >
       <span aria-hidden="true">♡</span>
     </button>
   </article>
 </template>
 
 <style lang="scss" scoped>
-@use '@globalStyle/variables' as *;
+@use "@globalStyle/variables" as *;
 
 .job-card {
   display: grid;
@@ -92,7 +119,10 @@ const status = computed(() => props.job.getAssessment().getStatus())
   border-radius: 10px;
   background: $color-white;
   animation: rise-in 350ms ease both;
-  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
 }
 
 .job-card:hover {
@@ -111,12 +141,30 @@ const status = computed(() => props.job.getAssessment().getStatus())
   font-size: 22px;
 }
 
-.job-card__company-mark--lavender { background: #eee8f6; color: #6f5c8a; }
-.job-card__company-mark--peach { background: #f8e7da; color: #aa6a40; }
-.job-card__company-mark--mint { background: #e0eee6; color: #4b7c60; }
-.job-card__company-mark--blue { background: #e2edf3; color: #48758b; }
-.job-card__company-mark--yellow { background: #f3efd8; color: #8c7e36; }
-.job-card__company-mark--rose { background: #f4e4e7; color: #a3606f; }
+.job-card__company-mark--lavender {
+  background: #eee8f6;
+  color: #6f5c8a;
+}
+.job-card__company-mark--peach {
+  background: #f8e7da;
+  color: #aa6a40;
+}
+.job-card__company-mark--mint {
+  background: #e0eee6;
+  color: #4b7c60;
+}
+.job-card__company-mark--blue {
+  background: #e2edf3;
+  color: #48758b;
+}
+.job-card__company-mark--yellow {
+  background: #f3efd8;
+  color: #8c7e36;
+}
+.job-card__company-mark--rose {
+  background: #f4e4e7;
+  color: #a3606f;
+}
 
 .job-card__main {
   min-width: 0;
@@ -236,7 +284,10 @@ const status = computed(() => props.job.getAssessment().getStatus())
   color: #78847b;
   font-size: 19px;
   cursor: pointer;
-  transition: color 160ms ease, border-color 160ms ease, background 160ms ease;
+  transition:
+    color 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease;
 }
 
 .job-card__save:hover {

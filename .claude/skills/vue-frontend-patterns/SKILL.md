@@ -12,11 +12,11 @@ This app is a Vue 3 SPA built with `<script setup lang="ts">`, Vite and SCSS. It
 | Kind | Location | Example |
 | --- | --- | --- |
 | Page: a thin composition of sections | `src/pages/` | `HomePage.vue` |
-| Page-level section | `src/components/sections/` | `HeroSection`, `JobsSection` |
-| Reusable content block | `src/components/content/` | `JobCard`, `JobSearchForm`, `JobsPager`, `RequestPreview`, `JobsEmptyState`, `JobsErrorState` |
+| Page-level section | `src/components/sections/` | `HeroSection`, `JobFiltersSection`, `JobsSection` |
+| Reusable content block | `src/components/content/` | `JobCard`, `JobFilterForm`, `CollectorPreferencesForm`, `JobsPager`, `RequestPreview`, `JobsEmptyState`, `JobsErrorState` |
 | Small shared UI primitive | `src/components/ui/` | `BrandLogo`, `TextButton` |
 | App shell | `src/components/header/`, `src/components/footer/`, `src/layouts/` | `AppHeader`, `DefaultLayout` |
-| Composition logic | `src/composables/` | `useJobSearch`, `usePages` |
+| Composition logic | `src/composables/` | `useJobFilters`, `useCollectorConfig`, `usePages` |
 | API service | `src/api/` | `api.ts` (`jobService.getJobs`) |
 | Read-only model classes, one per file | `src/models/JobService/` | `JobPageModel`, `JobListingModel`, `JobListingQueryModel` |
 | Raw API types, all in one file | `src/types/models/jobListings.d.ts` | `JobListing`, `JobPage`, `JobListingQuery` |
@@ -31,38 +31,38 @@ A page only does two things: it calls composables, and it wires their state into
 ```vue
 <!-- src/pages/HomePage.vue -->
 <script setup lang="ts">
-import HeroSection from "@/components/sections/HeroSection.vue";
+import JobFiltersSection from "@/components/sections/JobFiltersSection.vue";
 import JobsSection from "@/components/sections/JobsSection.vue";
-import { useJobSearch } from "@/composables/useJobSearch";
+import { useJobFilters } from "@/composables/useJobFilters";
 import DefaultLayout from "@/layouts/DefaultLayout.vue";
 
 const {
-  criteria,
+  filters,
   page,
   loading,
   error,
   requestPath,
-  search,
+  applyFilters,
   goToOffset,
-  clearSearch,
-} = useJobSearch();
+  clearFilters,
+} = useJobFilters();
 </script>
 
 <template>
   <DefaultLayout>
-    <HeroSection
-      v-model="criteria"
+    <JobFiltersSection
+      v-model="filters"
       :request-path="requestPath"
-      @search="search"
-      @clear="clearSearch"
+      @apply="applyFilters"
+      @clear="clearFilters"
     />
     <JobsSection
       :error="error"
       :loading="loading"
       :page="page"
-      @clear="clearSearch"
+      @clear="clearFilters"
       @page="goToOffset"
-      @retry="search"
+      @retry="applyFilters"
     />
   </DefaultLayout>
 </template>
@@ -70,7 +70,7 @@ const {
 
 Rules for components:
 
-- **Data in through props or `defineModel`, intent out through `defineEmits`.** Sections and content blocks don't call page composables such as `useJobSearch` themselves. Composable state is per-instance unless it's vault-backed, so a section that called it would get its own disconnected copy. Taking props also keeps the component reusable on other pages.
+- **Data in through props or `defineModel`, intent out through `defineEmits`.** Sections and content blocks don't call page composables such as `useJobFilters` themselves. Composable state is per-instance unless it's vault-backed, so a section that called it would get its own disconnected copy. Taking props also keeps the component reusable on other pages.
 - **Forward events up rather than handling them in the middle.** `JobsSection` re-emits `clear` from `JobsEmptyState`, `retry` from `JobsErrorState` and `page` (the new offset) from `JobsPager`, and the page decides what each one means.
 - **Prefer a component to a shared class.** If two components need the same styled markup, extract a `ui/` component with props for the variants. For example, `<BrandLogo compact />` is the footer's smaller logo, and `TextButton` is the link-style button shared by `JobsEmptyState` ("Clear your search") and `JobsErrorState` ("Try again").
 - Use typed macros: `defineProps<{ job: JobListingModel }>()`, and `withDefaults(...)` for optional booleans.
@@ -175,18 +175,18 @@ Things that will bite you:
 - **Use it only in an injection context.** `initVault` calls `inject`, so it works inside `setup` or another composable called from `setup`. It doesn't work in router guards or plain modules.
 - **Use one unique namespace per composable.** By convention the namespace string is the composable's name.
 
-If the state is local to one component tree, don't use the vault. A plain composable like `useJobSearch` is the right tool there.
+If the state is local to one component tree, don't use the vault. A plain composable like `useJobFilters` is the right tool there.
 
 ## 5. Plain composables
 
-`src/composables/useJobSearch.ts` is the model for a non-shared composable. It's a named export that returns refs, computeds and functions. It keeps **draft vs sent** state: `criteria` (a `JobListingQuery`) is the live form model bound with `v-model`, and a request only goes out when `search()` runs. `requestPath` is computed from the draft so the form can preview the exact request, but results only change on submit, not on every keystroke. Keep that split if you extend search. Searching as you type would be a behavior change to raise with the user.
+`src/composables/useJobFilters.ts` is the model for a non-shared composable. It's a named export that returns refs, computeds and functions. It keeps **draft vs sent** state: `filters` (a `JobListingQuery`) is the live form model bound with `v-model`, and a request only goes out when `applyFilters()` runs. `requestPath` is computed from the draft so the form can preview the exact request, but results only change on submit, not on every keystroke. Keep that split if you extend filtering. Filtering as you type would be a behavior change to raise with the user.
 
 What it returns:
 
-- `criteria`: the form model. `clearSearch()` resets it to the defaults (`limit: 20`, `offset: 0`, empty strings) and searches again.
+- `filters`: the form model. `clearFilters()` resets it to the defaults (`limit: 20`, `offset: 0`, empty strings) and filters again.
 - `page`: a `JobPageModel | null` held in a **`shallowRef`**. Use `shallowRef` for the model classes. `ref()` deep-unwraps them and its type drops their private fields, which breaks assignment to `JobPageModel`. The instances are read-only anyway, so deep reactivity buys nothing.
 - `loading` and `error` (a message string or `null`).
-- `search()`, and `goToOffset(offset)`, which writes `offset` into `criteria` and searches.
+- `applyFilters()`, and `goToOffset(offset)`, which writes `offset` into `filters` and applies them.
 
 Requests are numbered, and only the latest one may write `page`, `loading` or `error`, so a slow earlier response can't overwrite a newer one. The composable runs the first search when it's created.
 
@@ -227,8 +227,8 @@ They share one module-level `resize` listener and aren't installed as a Vue plug
 ## Code style
 
 - Match the file you're in, because the codebase mixes two styles.
-  - Single quotes and no semicolons: `useJobSearch`, `JobCard`, `JobsPager`, `JobsEmptyState`, `JobsErrorState` and `AppHeader`.
-  - Double quotes and semicolons: `api.ts`, the `JobService` models, `HomePage`, `HeroSection`, `JobsSection`, `JobSearchForm`, `AppFooter`, the plugins, router, vault, `usePages` and `PageView`.
+  - Single quotes and no semicolons: `useJobFilters`, `JobCard`, `JobsPager`, `JobsEmptyState`, `JobsErrorState` and `AppHeader`.
+  - Double quotes and semicolons: `api.ts`, the `JobService` models, `HomePage`, `HeroSection`, `JobsSection`, `JobFilterForm`, `AppFooter`, the plugins, router, vault, `usePages` and `PageView`.
   - Don't reformat files you aren't otherwise changing.
 - Templates use PascalCase component tags. Use `aria-hidden="true"` on decorative glyphs and an `aria-label` or `.sr-only` text on icon-only controls, as the existing components do.
 

@@ -10,8 +10,8 @@ defineEmits<{
   <div class="empty-state">
     <span class="empty-state__icon" aria-hidden="true">⌕</span>
     <h3>No matches just yet</h3>
-    <p>Try another keyword or location. The right opportunity might be one search away.</p>
-    <TextButton @click="$emit('clear')">Clear your search</TextButton>
+    <p>No listings in the latest export match these filters. Loosen them, or change the collector preferences above.</p>
+    <TextButton @click="$emit('clear')">Clear filters</TextButton>
   </div>
 </template>
 

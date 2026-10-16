@@ -2,8 +2,10 @@ import type { JobListing } from "@/types/models/jobListings";
 import { JobListingAssessmentModel } from "@/models/JobService/jobListingAssessmentModel";
 import { JobListingSourceModel } from "@/models/JobService/jobListingSourceModel";
 
-function toDate(value: string | null): Date | null {
-  return value ? new Date(value) : null;
+/** Accepts ISO strings and Unix timestamps in seconds; both appear in `published_at`. */
+function toDate(value: string | number | null): Date | null {
+  if (value === null || value === "") return null;
+  return new Date(typeof value === "number" ? value * 1000 : value);
 }
 
 export class JobListingModel {
@@ -11,7 +13,7 @@ export class JobListingModel {
   private readonly _assessment: JobListingAssessmentModel;
 
   constructor(private readonly data: JobListing) {
-    this._sources = data.sources.map(
+    this._sources = (data.sources ?? []).map(
       (source) => new JobListingSourceModel(source),
     );
     this._assessment = new JobListingAssessmentModel(data.assessment);
@@ -35,7 +37,7 @@ export class JobListingModel {
   }
 
   getLocationRestrictions(): readonly string[] {
-    return this.data.location_restrictions;
+    return this.data.location_restrictions ?? [];
   }
 
   getWorkMode(): string {
@@ -52,11 +54,11 @@ export class JobListingModel {
   }
 
   getContractTypes(): readonly string[] {
-    return this.data.contract_types;
+    return this.data.contract_types ?? [];
   }
 
   getEmploymentTypes(): readonly string[] {
-    return this.data.employment_type_raw;
+    return this.data.employment_type_raw ?? [];
   }
 
   getUrl(): string {
