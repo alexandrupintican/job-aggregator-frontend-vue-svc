@@ -8,10 +8,10 @@ export class JobListingAssessmentModel {
   }
 
   getMatchedTerms(): readonly string[] {
-    return this.data.matched_terms;
+    return this.data.matched_terms ?? [];
   }
 
   getReasons(): readonly string[] {
-    return this.data.reasons;
+    return this.data.reasons ?? [];
   }
 }

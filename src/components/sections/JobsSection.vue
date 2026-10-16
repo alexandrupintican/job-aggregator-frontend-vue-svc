@@ -4,12 +4,15 @@ import JobCard from "@/components/content/JobCard.vue";
 import JobsEmptyState from "@/components/content/JobsEmptyState.vue";
 import JobsErrorState from "@/components/content/JobsErrorState.vue";
 import JobsPager from "@/components/content/JobsPager.vue";
+import Spinner from "@/components/ui/Spinner.vue";
 import type { JobPageModel } from "@/models/JobService/jobPageModel";
 
 const props = defineProps<{
   page: JobPageModel | null;
   loading: boolean;
   error: string | null;
+  /** A collector run is in progress; the results refresh when it finishes. */
+  collecting?: boolean;
 }>();
 
 defineEmits<{
@@ -37,9 +40,17 @@ const resultLabel = computed(() => {
       <div>
         <h2 id="jobs-heading"><span>Aggregator results</span></h2>
       </div>
-      <span v-if="!error" class="result-count" aria-live="polite">{{
-        resultLabel
-      }}</span>
+      <p
+        v-if="collecting"
+        class="result-count result-count--collecting"
+        aria-live="polite"
+      >
+        <Spinner :size="12" />
+        Collecting new listings…
+      </p>
+      <p v-else-if="!error" class="result-count" aria-live="polite">
+        {{ resultLabel }}
+      </p>
     </div>
 
     <JobsErrorState v-if="error" :message="error" @retry="$emit('retry')" />
@@ -67,10 +78,10 @@ const resultLabel = computed(() => {
 
 <style lang="scss" scoped>
 @use "@globalStyle/variables" as *;
-@use "@globalStyle/mixins" as *;
 
 .jobs-section {
-  @include content-width;
+  width: calc(100% - 48px);
+  margin-inline: auto;
   padding-top: 67px;
   padding-bottom: 59px;
 }
@@ -84,25 +95,27 @@ const resultLabel = computed(() => {
 
 .section-heading h2 {
   margin: 0;
-  color: $color-ink;
-  font-family: $font-display;
-  font-size: clamp(29px, 4vw, 37px);
+  color: var(--text);
   font-weight: 400;
-  letter-spacing: -0.8px;
 }
 
 .section-heading h2 span {
-  color: #8a9e67;
+  color: var(--color-accent-1);
   font-style: italic;
 }
 
 .result-count {
   padding: 7px 10px;
   border-radius: 20px;
-  background: #edf0e9;
-  color: #65766a;
-  font-size: 11px;
+  background: var(--surface);
+  color: var(--text-muted);
   font-weight: 600;
+}
+
+.result-count--collecting {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
 }
 
 .job-list {
@@ -117,7 +130,7 @@ const resultLabel = computed(() => {
 
 @media (max-width: 680px) {
   .jobs-section {
-    width: min(calc(100% - 36px), $content-width);
+    width: calc(100% - 36px);
     padding-top: 44px;
     padding-bottom: 42px;
   }
@@ -125,10 +138,6 @@ const resultLabel = computed(() => {
   .section-heading {
     align-items: flex-start;
     gap: 10px;
-  }
-
-  .section-heading h2 {
-    font-size: 30px;
   }
 
   .result-count {

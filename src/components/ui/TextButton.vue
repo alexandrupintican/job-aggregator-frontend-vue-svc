@@ -12,8 +12,7 @@
   padding: 6px;
   border: 0;
   background: transparent;
-  color: $color-green;
-  font-size: 12px;
+  color: var(--color-accent-1);
   font-weight: 650;
   cursor: pointer;
 }

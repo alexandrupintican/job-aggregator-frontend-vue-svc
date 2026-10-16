@@ -1,17 +1,18 @@
 # Job Aggregator
 
-A responsive job-search frontend built with **Vue 3**, **TypeScript**, **Vite**, and **SCSS**. It reads live listings from the Jobs Listing API (`GET /api/jobs`) and lets you build the request yourself: every query parameter the endpoint supports has its own field, and the exact request is previewed as you type.
+A responsive job-search frontend built with **Vue 3**, **TypeScript**, **Vite**, and **SCSS**. It reads live listings from the Jobs Listing API (`GET /api/jobs`) and lets you build the request yourself: every query parameter the endpoint supports has its own field. It also edits the collector's search preferences.
 
 ## Features
 
 - ⚡ Vue 3 Composition API and Vite
 - 🟦 TypeScript support
 - 🔌 Live listings from the Jobs Listing API
-- 🔎 Search form that maps 1:1 to the endpoint's query parameters, with a live request preview
+- 🔎 Search form that maps 1:1 to the endpoint's query parameters
+- 🛠️ Collector preferences form that saves to the API and can trigger a collector run
 - 📄 Server-side pagination with Previous / Next controls
 - ⏳ Loading, empty, and error states with retry
-- 🎨 SCSS theme variables and component-scoped styles
-- 📱 Responsive layout
+- 🎨 Dark theme driven by CSS custom properties, with component-scoped styles
+- 📱 Responsive layout on a 12-column grid
 - 🐳 Docker support for containerized deployment
 
 ---
@@ -38,14 +39,14 @@ A responsive job-search frontend built with **Vue 3**, **TypeScript**, **Vite**,
 ├── src/
 │   ├── api/              # API service (api.ts): fetch wrapper + jobService
 │   ├── assets/
-│   │   └── style/        # Global SCSS partials
+│   │   └── style/        # _variables, _theme (CSS custom properties), _mixins (grid columns), global.scss
 │   ├── components/
-│   │   ├── content/      # JobCard, JobSearchForm, RequestPreview, JobsPager, states
+│   │   ├── content/      # JobCard, JobFilterForm, CollectorPreferencesForm, JobsPager, states
 │   │   ├── footer/
 │   │   ├── header/
-│   │   ├── sections/     # HeroSection, JobsSection
-│   │   └── ui/           # BrandLogo, TextButton
-│   ├── composables/      # useJobSearch, usePages
+│   │   ├── sections/     # HeroSection, JobFiltersSection, JobsSection
+│   │   └── ui/           # BrandLogo, PrimaryButton, TextButton, Spinner, FormField, ListField
+│   ├── composables/      # useJobFilters, useCollectorConfig, usePages
 │   ├── layouts/
 │   ├── models/
 │   │   └── JobService/   # Read-only model classes wrapping API responses
@@ -143,19 +144,18 @@ The search form exposes every query parameter of `GET /api/jobs`. Each field is 
 | Limit | `limit` | Page size, 1–500 (the form starts at 20) |
 | Offset | `offset` | Number of listings to skip |
 
-- The request preview under the form shows the exact `GET /api/jobs?...` that will be sent. Empty fields are left out.
-- A request is only sent when you press **Find jobs**, not while you type.
-- **Previous / Next** change `offset` by `limit` and re-run the search. **Find jobs** sends the current `offset` as-is; it does not reset it to 0.
+- A request is only sent when you press **Apply filters**, not while you type. Empty fields are left out of the query.
+- **Previous / Next** change `offset` by `limit` and re-run the search. **Apply filters** sends the current `offset` as-is; it does not reset it to 0.
 - **Reset** restores the defaults and reloads the first page.
-- Job titles link to the original posting. Descriptions are shown as shortened plain text.
+- Each job card links to the original posting through its title and its **View listing** button, both opening in a new tab. Descriptions are shown as shortened plain text.
 
 ---
 
 ## Architecture
 
 - **Pages** are thin compositions of section components. The router has a single catch-all route; `views/PageView.vue` picks the page from state (`usePages`), so the URL never changes.
-- **Components** are split into `sections/` (page-level blocks), `content/` (reusable blocks), and `ui/` (small shared primitives). Each owns its scoped styles.
-- **Composables** hold the logic. `useJobSearch` keeps the query bound to the form, calls the API on search, and exposes the current page, loading, and error state.
+- **Components** are split into `sections/` (page-level blocks), `content/` (reusable blocks), and `ui/` (small shared primitives). Each owns its scoped styles. Colors come from the CSS custom properties in `assets/style/_theme.scss`, text size comes from the HTML tag (`h1`/`h2`/`p`) rather than per-component `font-size`, and layouts use the global 12-column `.grid` with `col--N` / `col__{xs,sm,md,lg}--N` classes.
+- **Composables** hold the logic. `useJobFilters` keeps the filters bound to the form, calls the API when they are applied, and exposes the current page, loading, and error state. `useCollectorConfig` loads and saves the collector preferences.
 - **API** (`src/api/api.ts`) wraps `fetch`, prefixes requests with `VITE_API_URL`, and exposes `jobService.getJobs(query)`.
 - **Models** (`src/models/JobService/`) are read-only classes around API responses (`JobPageModel`, `JobListingModel`, …) with `getX()` methods. `JobListingQueryModel` builds the query string.
 - **Types** (`src/types/models/jobListings.d.ts`) describe the raw API payloads.

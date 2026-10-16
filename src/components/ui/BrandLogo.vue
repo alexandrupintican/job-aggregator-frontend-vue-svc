@@ -23,10 +23,8 @@ withDefaults(
   display: inline-flex;
   align-items: center;
   gap: 9px;
-  color: $color-ink;
-  font-size: 19px;
+  color: var(--text);
   font-weight: 650;
-  letter-spacing: -0.8px;
   text-decoration: none;
 }
 
@@ -36,22 +34,14 @@ withDefaults(
   height: 34px;
   place-items: center;
   border-radius: 11px;
-  background: $color-green;
-  color: $color-white;
-  font-family: $font-display;
-  font-size: 22px;
+  background: linear-gradient(135deg, var(--color-accent-1), var(--color-accent-2));
+  color: var(--color-white);
   line-height: 1;
-  letter-spacing: -2px;
-}
-
-.brand--compact {
-  font-size: 16px;
 }
 
 .brand--compact .brand__mark {
   width: 29px;
   height: 29px;
   border-radius: 9px;
-  font-size: 19px;
 }
 </style>

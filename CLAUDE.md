@@ -31,14 +31,18 @@ The URL never changes. Note that `HomePage.vue` also wraps itself in `layouts/De
 **Component conventions.** The full playbook, with examples, is in the `vue-frontend-patterns` skill (`.claude/skills/vue-frontend-patterns/SKILL.md`). Keep pages thin. A page only wires composable state into section components; it holds no large inline markup.
 
 - Every distinct section or block goes in its own `.vue` file so that a change to it shows up everywhere it is reused. `HomePage.vue` follows this pattern.
-- Page-level sections go in `components/sections/`, e.g. `HeroSection`, `JobsSection`.
-- Smaller reusable pieces go in `components/content/`, e.g. `JobCard`, `JobSearchForm`, `RequestPreview`, `JobsPager`, `JobsEmptyState`, `JobsErrorState`.
-- Shared building blocks go in `components/ui/`, e.g. `BrandLogo`, `TextButton`.
+- Page-level sections go in `components/sections/`, e.g. `HeroSection` (collector preferences), `JobFiltersSection`, `JobsSection`.
+- Smaller reusable pieces go in `components/content/`, e.g. `JobCard`, `JobFilterForm`, `CollectorPreferencesForm`, `JobsPager`, `JobsEmptyState`, `JobsErrorState`.
+- Shared building blocks go in `components/ui/`, e.g. `BrandLogo`, `TextButton`, `PrimaryButton` (the filled accent call-to-action used for Apply filters, Save preferences and View listing; renders an `<a>` when given `href`, otherwise a `<button>`, with other attributes falling through), `Spinner`, `FormField` (label + API-name `code` chip + slotted input + optional hint) and `ListField` (comma-separated list input built on `FormField`, no hint). Every form input goes through `FormField`/`ListField`; don't hand-roll label/input markup.
 - Components receive data through props or `defineModel` and report back through emits. They don't call page composables themselves.
-- Each component owns its styles in `<style lang="scss" scoped>`, including its media queries (breakpoints are 1400/900/680px).
-  - Each component starts its style block with `@use '@globalStyle/variables' as *;`, plus `mixins` when needed.
-  - `main.scss` only holds the reset, base element styles, `.sr-only` and the reduced-motion override.
-  - Keyframes live in `_animations.scss`. The `rise-in` animation is global, so scoped blocks can reference it.
+- Each component owns its styles in `<style lang="scss" scoped>`, including its media queries (component breakpoints are `max-width` 900px and 680px; `global.scss` uses 1024px).
+  - Each component starts its style block with `@use '@globalStyle/variables' as *;`. Don't `@use` `mixins` in components: `_mixins.scss` emits the `.col--N`/`.row--N` grid classes at top level, so every import duplicates them.
+  - Colors, fonts and sizes come from the CSS custom properties in `_theme.scss` (`var(--text)`, `--text-muted`, `--background`, `--surface`, `--border`, `--color-accent-1`/`-2`, `--color-secondary`, `--font-family-primary`, `--header-height`, …). The theme is dark.
+  - Components never set `font-size` or `letter-spacing`. Typography comes from the tag: use `h1`/`h2` for titles, including card and empty/error-state titles (sized in `global.scss`; `h3` has no theme size, so don't use it), and `p` for standalone text. Inline `span`s inherit the root size from `_theme.scss`. Labels and hints inside a `<label>` stay `span` because `p` isn't valid there. The one exception is `PrimaryButton`'s `font-size: inherit`, which makes its `<a>` and `<button>` forms match the page size (browsers shrink buttons to ~13px).
+  - Lay out multi-field blocks with the theme grid: a `.grid` container (12 columns, 15px gap) plus `col--N` and responsive `col__{xs|sm|md|lg}--N` classes on the children. The responsive classes apply from 481/769/961/1281px up (mobile-first), so they usually replace media queries. `.grid` carries a `20px 0` margin; zero it in a scoped rule when the parent already has padding. `JobFilterForm` is the reference.
+  - Use flex only for a single row that needs alignment, such as right-aligned buttons (`.filter-panel__actions`) or an icon next to text. Stack things vertically with `display: grid` and `gap`, not `flex-direction: column` (see `FormField`).
+  - `global.scss` holds base element styles, `.grid` and `.button`. There is no global box-sizing reset, `.sr-only`, focus ring or reduced-motion override.
+  - There is no global keyframes file. A component that animates declares its own `@keyframes` in its scoped block (e.g. `rise-in` in `JobCard`/`HeroSection`, `spin` in `Spinner`).
   - A style that more than one component needs becomes its own component, not a global class.
 
 **State: the vault (`plugins/vault.ts`).** This replaces Pinia/Vuex. The plugin `provide`s one plain, non-reactive object per app. `initVault<T>(namespace)` returns `get` and `storeAndGet` for that namespace. Use it for composables that hold shared singleton state, following the pattern in `composables/usePages.ts`:
@@ -51,12 +55,13 @@ Only stored `ref`/`reactive` values are reactive, and `initVault` uses `inject`,
 **Job search data.** Listings come from the Jobs Listing API (a separate Go service, `go run ./cmd/jobs-api`), which serves an exported `jobs.json` at `VITE_API_URL` (`.env`, default `http://localhost:8000`). Its spec is at `/openapi.json` and Swagger UI at `/docs`.
 
 - `GET /api/jobs` accepts only `limit` (1–500, server default 100), `offset`, `status`, `source`, `company`, `location`, `work_mode` and `q`, and silently ignores anything else. Every filter except `q` is a case-insensitive exact match. Invalid pagination returns 400. The response is `{ total, limit, offset, jobs }`.
-- `composables/useJobSearch.ts` holds the query as `criteria` (the live form model; the form has one field per parameter) and only calls the API when `search()` runs, so results change on submit, not as the user types. `requestPath` previews the exact request from the draft. It also exposes `page`, `loading`, `error`, `goToOffset()` and `clearSearch()`, runs the first search on creation, and discards responses from superseded requests.
+- `composables/useJobFilters.ts` filters the collector's latest export through `getJobs`. It holds the query as `filters` (the live form model; the form has one field per parameter) and only calls the API when `applyFilters()` runs, so results change on submit, not as the user types. It also exposes `page`, `loading`, `error`, `goToOffset()` and `clearFilters()`, runs the first request on creation, and discards responses from superseded requests.
+- `composables/useCollectorConfig.ts` loads `GET /api/config` and exposes its `preferences` as the hero form model. `save()` sends the whole config back through `updateConfig` (PUT replaces the file) with only `preferences` changed. New preferences only affect results after the next collector run.
 - `page` is a `shallowRef`: `ref()` strips the model classes' private fields from the type.
 - The composable does _not_ use the vault, so its state is per component instance.
 - `models/job.ts` and `models/jobs.ts` are the old sample data and are unused.
 
-**API layer (`src/api/api.ts`).** A small `fetch` wrapper. `request()` prefixes the path with `VITE_API_URL` (via `utils/utils.ts` `getEnvVariable`; `vite.config.ts` loads `VITE_*` vars) and throws an `Error` on non-2xx. The default export holds the services; `jobService.getJobs(query: JobListingQueryModel)` returns a `JobPageModel`. `JOBS_ENDPOINT` is exported for the request preview. Components reach the API only through composables.
+**API layer (`src/api/api.ts`).** A small `fetch` wrapper. `request()` prefixes the path with `VITE_API_URL` (via `utils/utils.ts` `getEnvVariable`; `vite.config.ts` loads `VITE_*` vars) and throws an `Error` on non-2xx. The default export holds the services; `jobService.getJobs(query: JobListingQueryModel)` returns a `JobPageModel`. Components reach the API only through composables.
 
 **Models and types.**
 
@@ -64,12 +69,13 @@ Only stored `ref`/`reactive` values are reactive, and `initVault` uses `inject`,
 - `models/JobService/` holds one read-only class per file (`JobPageModel`, `JobListingModel`, `JobListingAssessmentModel`, `JobListingSourceModel`, `JobListingQueryModel`). Each wraps the raw payload in a `private readonly data` field and exposes it through `getX()` methods (not `get x()` accessors, no setters), with camelCase names, `Date` for timestamps and `readonly` arrays. Nested objects are wrapped in the constructor.
 - `JobListingModel.getId()` (`source:source_id`) is unique and is the list key. `JobListingQueryModel.getQueryString()` builds the query string, skipping empty values.
 - Descriptions are raw HTML from job boards; `JobCard` shows them as shortened plain text. Don't render them with `v-html`.
+- `JobCard` links to the posting twice, through the title and a "View listing" `PrimaryButton`, both opening in a new tab.
 
 **Responsive helpers.** `plugins/breakpoint.ts` exports module-level computed flags (`isMobile`, `isTablet`, `isSmallDevice`, …) driven by one shared `resize` listener. Import them directly; they are not installed as a Vue plugin.
 
 **Styling.**
 
-- Global SCSS (`_variables`, `_mixins`, `_animations`) is imported once through `assets/style/main.scss` in `main.ts`.
+- Global SCSS (`_variables`, `_theme`, `_mixins`) is imported once through `assets/style/global.scss` in `main.ts`.
 - `scss.preprocessorOptions` is empty, so component `<style lang="scss">` blocks must import partials explicitly through `@globalStyle`.
 - `src/vite/devSingleCss.ts` is a dev-only Vite plugin (`apply: "serve"`). It collects every transformed `.scss` source, compiles them together with sass, and serves the result as `/@dev-bundled-styles.css`, which it injects into `index.html`.
 - Production builds use `cssCodeSplit: false`, so there is a single CSS file.

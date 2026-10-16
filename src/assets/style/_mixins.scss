@@ -1,11 +1,22 @@
-@use './variables' as *;
+@use "variables" as *;
 
-@mixin content-width {
-  width: min(calc(100% - 48px), $content-width);
-  margin-inline: auto;
+@mixin create-selectors($breakpoint: null) {
+  $point: if($breakpoint == null, "", "__#{$breakpoint}");
+
+  @for $i from 1 through $grid-columns {
+    .col#{$point}--#{$i} {
+      grid-column-end: span $i;
+    }
+    .row#{$point}--#{$i} {
+      grid-row-end: span $i;
+    }
+  }
 }
 
-@mixin focus-ring {
-  outline: 3px solid rgba(49, 92, 73, 0.25);
-  outline-offset: 3px;
+@include create-selectors;
+
+@each $breakpoint, $width in $breakpoints {
+  @media (min-width: ($width + 1px)) {
+    @include create-selectors($breakpoint);
+  }
 }
