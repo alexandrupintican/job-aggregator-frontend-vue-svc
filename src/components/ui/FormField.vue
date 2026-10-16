@@ -9,9 +9,7 @@ defineProps<{
 
 <template>
   <label class="form-field">
-    <span class="form-field__label"
-      >{{ label }} <code v-if="name">{{ name }}</code></span
-    >
+    <span class="form-field__label">{{ label }}</span>
     <slot />
     <span v-if="hint" class="form-field__hint">{{ hint }}</span>
   </label>
@@ -21,15 +19,13 @@ defineProps<{
 @use "@globalStyle/variables" as *;
 
 .form-field {
-  display: flex;
+  display: grid;
   min-width: 0;
-  flex-direction: column;
   gap: 5px;
 }
 
 .form-field__label {
-  color: #3e5146;
-  font-size: 11px;
+  color: var(--text);
   font-weight: 700;
 }
 
@@ -37,35 +33,33 @@ code {
   margin-left: 4px;
   padding: 1px 4px;
   border-radius: 3px;
-  background: #f1f4ee;
-  color: #6c7b70;
-  font-size: 9px;
+  background: var(--border);
+  color: var(--text-muted);
   font-weight: 500;
 }
 
 :slotted(input) {
+  box-sizing: border-box;
   width: 100%;
   min-width: 0;
   padding: 7px 8px;
-  border: 1px solid $color-border;
+  border: 1px solid var(--border);
   border-radius: 6px;
-  background: $color-white;
-  color: $color-ink;
-  font-size: 11px;
+  background: var(--background);
+  color: var(--text);
 }
 
 :slotted(input)::placeholder {
-  color: #929b95;
+  color: var(--color-secondary);
   opacity: 1;
 }
 
 :slotted(input:focus-visible) {
-  border-color: $color-green;
+  border-color: var(--color-accent-1);
   outline: 0;
 }
 
 .form-field__hint {
-  color: #929b95;
-  font-size: 10px;
+  color: var(--color-secondary);
 }
 </style>

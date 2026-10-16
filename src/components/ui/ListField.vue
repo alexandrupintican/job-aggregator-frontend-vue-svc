@@ -34,7 +34,7 @@ function onInput(event: Event) {
 </script>
 
 <template>
-  <FormField :label="label" :name="name" hint="Comma-separated">
+  <FormField :label="label" :name="name">
     <input
       :value="text"
       autocomplete="off"

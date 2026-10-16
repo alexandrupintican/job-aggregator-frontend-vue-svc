@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import FormField from "@/components/ui/FormField.vue";
 import ListField from "@/components/ui/ListField.vue";
+import PrimaryButton from "@/components/ui/PrimaryButton.vue";
 import Spinner from "@/components/ui/Spinner.vue";
 import type { CollectorPreferences } from "@/types/models/jobListings";
 
@@ -33,7 +34,8 @@ const status = computed(() => {
       ? `Collector finished with warnings: ${props.runWarning}. Results refreshed.`
       : "Collector finished. Results refreshed.";
   }
-  if (props.saved) return "Saved. Run the collector to apply it to the results.";
+  if (props.saved)
+    return "Saved. Run the collector to apply it to the results.";
   return null;
 });
 
@@ -53,71 +55,79 @@ const postedWithinDays = computed({
 </script>
 
 <template>
-  <form class="preferences-form" @submit.prevent="$emit('save')">
-    <div class="preferences-form__header">
+  <form class="preferences-form grid" @submit.prevent="$emit('save')">
+    <div class="preferences-form__header col--12">
       <h2>Collector preferences</h2>
       <p>
         What the collector looks for. Saved to the server and used on its next
-        run.
+        run. Every field must be comma separated.
       </p>
     </div>
 
-    <div class="preferences-form__grid">
-      <ListField
-        v-model="model.roles"
-        label="Roles"
-        name="roles"
-        placeholder="e.g. Developer, Engineer"
+    <ListField
+      v-model="model.roles"
+      class="col--12 col__sm--3"
+      label="Roles"
+      name="roles"
+      placeholder="e.g. Developer, Engineer"
+    />
+    <ListField
+      v-model="model.technologies"
+      class="col--12 col__sm--3"
+      label="Technologies"
+      name="technologies"
+      placeholder="e.g. Vue, TypeScript"
+    />
+    <ListField
+      v-model="model.required_keywords"
+      class="col--12 col__sm--3"
+      label="Required keywords"
+      name="required_keywords"
+      placeholder="Every listing must mention these"
+    />
+    <ListField
+      v-model="model.excluded_keywords"
+      class="col--12 col__sm--3"
+      label="Excluded keywords"
+      name="excluded_keywords"
+      placeholder="e.g. Senior, Lead"
+    />
+    <ListField
+      v-model="model.work_modes"
+      class="col--12 col__sm--3"
+      label="Work modes"
+      name="work_modes"
+      placeholder="Any, or e.g. remote, hybrid"
+    />
+    <ListField
+      v-model="model.contract_types"
+      class="col--12 col__sm--3"
+      label="Contract types"
+      name="contract_types"
+      placeholder="Any, or e.g. full-time"
+    />
+    <FormField class="col--12 col__sm--3" label="Country" name="country_filter">
+      <input
+        v-model.trim="model.country_filter"
+        autocomplete="off"
+        placeholder="Any, or e.g. EU"
+        type="text"
       />
-      <ListField
-        v-model="model.technologies"
-        label="Technologies"
-        name="technologies"
-        placeholder="e.g. Vue, TypeScript"
+    </FormField>
+    <FormField
+      class="col--12 col__sm--3"
+      label="Posted within days"
+      name="posted_within_days"
+    >
+      <input
+        v-model="postedWithinDays"
+        min="1"
+        placeholder="No limit"
+        type="number"
       />
-      <ListField
-        v-model="model.required_keywords"
-        label="Required keywords"
-        name="required_keywords"
-        placeholder="Every listing must mention these"
-      />
-      <ListField
-        v-model="model.excluded_keywords"
-        label="Excluded keywords"
-        name="excluded_keywords"
-        placeholder="e.g. Senior, Lead"
-      />
-      <ListField
-        v-model="model.work_modes"
-        label="Work modes"
-        name="work_modes"
-        placeholder="Any, or e.g. remote, hybrid"
-      />
-      <ListField
-        v-model="model.contract_types"
-        label="Contract types"
-        name="contract_types"
-        placeholder="Any, or e.g. full-time"
-      />
-      <FormField label="Country" name="country_filter">
-        <input
-          v-model.trim="model.country_filter"
-          autocomplete="off"
-          placeholder="Any, or e.g. EU"
-          type="text"
-        />
-      </FormField>
-      <FormField label="Posted within days" name="posted_within_days">
-        <input
-          v-model="postedWithinDays"
-          min="1"
-          placeholder="No limit"
-          type="number"
-        />
-      </FormField>
-    </div>
+    </FormField>
 
-    <div class="preferences-form__actions">
+    <div class="preferences-form__footer col--12">
       <p
         v-if="status"
         class="preferences-form__status"
@@ -125,33 +135,34 @@ const postedWithinDays = computed({
         role="status"
       >
         <Spinner v-if="running && !error" />
-        <span>{{ status }}</span>
+        {{ status }}
       </p>
-      <button
-        v-if="saved && !running"
-        class="preferences-form__run"
-        :disabled="saving || starting"
-        type="button"
-        @click="$emit('run')"
-      >
-        {{ starting ? "Starting…" : "Run collector" }}
-      </button>
-      <button
-        class="preferences-form__revert"
-        :disabled="saving || running"
-        type="button"
-        @click="$emit('reload')"
-      >
-        Revert
-      </button>
-      <button
-        class="preferences-form__save"
-        :disabled="saving || running"
-        type="submit"
-      >
-        <span>{{ saving ? "Saving…" : "Save preferences" }}</span>
-        <span aria-hidden="true">↗</span>
-      </button>
+      <div class="preferences-form__actions">
+        <button
+          v-if="saved && !running"
+          class="preferences-form__run"
+          :disabled="saving || starting"
+          type="button"
+          @click="$emit('run')"
+        >
+          {{ starting ? "Starting…" : "Run collector" }}
+        </button>
+        <button
+          class="preferences-form__revert"
+          :disabled="saving || running"
+          type="button"
+          @click="$emit('reload')"
+        >
+          <p>Revert</p>
+        </button>
+        <PrimaryButton
+          class="preferences-form__save"
+          :disabled="saving || running"
+          type="submit"
+        >
+          {{ saving ? "Saving…" : "Save preferences" }}
+        </PrimaryButton>
+      </div>
     </div>
   </form>
 </template>
@@ -160,70 +171,61 @@ const postedWithinDays = computed({
 @use "@globalStyle/variables" as *;
 
 .preferences-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  align-items: end;
+  margin: 0;
   padding: 20px;
-  border: 1px solid rgba(48, 70, 55, 0.07);
+  border: 1px solid var(--border);
   border-radius: 12px;
-  background: $color-white;
-  box-shadow: 0 14px 42px rgba(37, 52, 44, 0.08);
+  background: var(--surface);
+  box-shadow: 0 14px 42px rgba(0, 0, 0, 0.35);
 }
 
 .preferences-form__header h2 {
   margin: 0;
-  color: $color-green-dark;
-  font-family: $font-display;
-  font-size: 26px;
+  color: var(--text);
   font-weight: 400;
-  letter-spacing: -0.5px;
 }
 
 .preferences-form__header p {
   margin: 6px 0 0;
-  color: #68766d;
-  font-size: 12px;
+  color: var(--text-muted);
 }
 
-.preferences-form__grid {
+.preferences-form__footer {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px 16px;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.preferences-form__status {
+  color: var(--color-accent-1);
+}
+
+.preferences-form__status .spinner {
+  margin-right: 8px;
+}
+
+.preferences-form__status--error {
+  color: #e08a9a;
+}
+
+.preferences-form__status--warning {
+  color: #e0b46a;
 }
 
 .preferences-form__actions {
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 12px;
-  padding-top: 14px;
-  border-top: 1px solid $color-border;
-}
-
-.preferences-form__status {
-  display: flex;
-  flex: 1;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
-  color: $color-green;
-  font-size: 11px;
-}
-
-.preferences-form__status--error {
-  color: #b54a3c;
-}
-
-.preferences-form__status--warning {
-  color: #9a6b1f;
 }
 
 .preferences-form__revert {
   padding: 8px 6px;
   border: 0;
   background: transparent;
-  color: $color-green;
-  font-size: 11px;
+  color: var(--color-accent-1);
   font-weight: 650;
   cursor: pointer;
 }
@@ -231,44 +233,19 @@ const postedWithinDays = computed({
 .preferences-form__run {
   min-height: 44px;
   padding: 0 15px;
-  border: 1px solid $color-green;
+  border: 1px solid var(--color-accent-1);
   border-radius: 7px;
   background: transparent;
-  color: $color-green;
-  font-size: 12px;
+  color: var(--color-accent-1);
   font-weight: 600;
   cursor: pointer;
   transition: background 160ms ease;
 }
 
 .preferences-form__run:hover:not(:disabled) {
-  background: #eef3ea;
+  background: color-mix(in srgb, var(--color-accent-1) 15%, transparent);
 }
 
-.preferences-form__save {
-  display: inline-flex;
-  min-height: 44px;
-  align-items: center;
-  gap: 18px;
-  padding: 0 17px;
-  border: 0;
-  border-radius: 7px;
-  background: $color-green;
-  color: $color-white;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition:
-    background 160ms ease,
-    transform 160ms ease;
-}
-
-.preferences-form__save:hover:not(:disabled) {
-  transform: translateY(-1px);
-  background: $color-green-dark;
-}
-
-.preferences-form__save:disabled,
 .preferences-form__run:disabled,
 .preferences-form__revert:disabled {
   cursor: wait;
@@ -280,21 +257,8 @@ const postedWithinDays = computed({
     padding: 14px;
   }
 
-  .preferences-form__grid {
-    grid-template-columns: 1fr;
-  }
-
-  .preferences-form__actions {
-    flex-wrap: wrap;
-  }
-
-  .preferences-form__status {
-    flex-basis: 100%;
-  }
-
   .preferences-form__save {
     flex: 1;
-    justify-content: center;
   }
 }
 </style>
