@@ -1,6 +1,5 @@
-import { computed, ref, shallowRef } from "vue";
-import api, { JOBS_ENDPOINT } from "@/api/api";
-import JobListingQueryModel from "@/models/JobService/jobListingQueryModel";
+import { ref, shallowRef } from "vue";
+import api from "@/api/api";
 import { JobPageModel } from "@/models/JobService/jobPageModel";
 import type { JobListingQuery, JobPage } from "@/types/models/jobListings";
 import { getApiErrorMessage } from "@/utils/utils";
