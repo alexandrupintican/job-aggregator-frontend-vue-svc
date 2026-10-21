@@ -77,8 +77,6 @@ const resultLabel = computed(() => {
 </template>
 
 <style lang="scss" scoped>
-@use "@globalStyle/variables" as *;
-
 .jobs-section {
   width: calc(100% - 48px);
   margin-inline: auto;
@@ -101,7 +99,7 @@ const resultLabel = computed(() => {
 
 .section-heading h2 span {
   color: var(--color-accent-1);
-  font-style: italic;
+  font-weight: 800;
 }
 
 .result-count {

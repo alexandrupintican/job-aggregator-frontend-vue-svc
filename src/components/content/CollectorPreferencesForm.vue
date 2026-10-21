@@ -168,8 +168,6 @@ const postedWithinDays = computed({
 </template>
 
 <style lang="scss" scoped>
-@use "@globalStyle/variables" as *;
-
 .preferences-form {
   align-items: end;
   margin: 0;

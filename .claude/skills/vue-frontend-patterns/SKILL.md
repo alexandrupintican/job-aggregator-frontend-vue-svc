@@ -80,8 +80,6 @@ Each component owns its styles in a scoped SCSS block in the same file. That inc
 
 ```vue
 <style lang="scss" scoped>
-@use "@globalStyle/variables" as *;
-
 .jobs-section {
   width: calc(100% - 48px);
   margin-inline: auto;
@@ -97,7 +95,7 @@ Each component owns its styles in a scoped SCSS block in the same file. That inc
 </style>
 ```
 
-- **Import the partials yourself.** `scss.preprocessorOptions` doesn't inject anything automatically, so every block that uses `$` variables needs the `@use` line. Don't `@use` `mixins` in a component: `_mixins.scss` emits the grid `.col--N`/`.row--N` classes, so each import duplicates them.
+- **Don't import partials by default.** Components style themselves with the theme's CSS custom properties, which need no import, so style blocks start straight with rules. `scss.preprocessorOptions` injects nothing, so if a block genuinely needs a `$` SCSS variable, add `@use "@globalStyle/variables" as *;` to that block only. Never `@use` `mixins` in a component: `_mixins.scss` emits the grid `.col--N`/`.row--N` classes, so each import duplicates them.
 - **Use the theme tokens.** `_theme.scss` exposes the palette as CSS custom properties on `:root`. Prefer them over raw `$` values: `--text`, `--text-muted`, `--background`, `--surface` (cards and panels), `--border`, `--color-accent-1` (primary actions and links), `--color-accent-2` (hover), `--color-secondary`, `--color-white`, `--font-family-primary`, plus `--header-height`, `--footer-height` and `--content-height`. The theme is dark. Write one-off tints as `color-mix(in srgb, var(--color-accent-1) 15%, transparent)` or as low-alpha `rgba`.
 - **Don't set `font-size` or `letter-spacing` in components.** Typography comes from the HTML tag. Titles are `h1`/`h2`, sized in `global.scss`; that includes card and empty/error-state titles. Don't use `h3`, which has no theme size. Standalone text is `p`. Inline `span`s inherit the root size from `_theme.scss`. Labels and hints inside a `<label>` stay `span`, because `p` isn't valid there. If something needs a new size, add a tag rule to the theme rather than a component override. The one exception is `font-size: inherit` in `PrimaryButton`, which makes its `<a>` and `<button>` forms match, because browsers render buttons at ~13px.
 - **Lay out blocks with the theme grid; use flex only when it's needed.** Put `.grid` (12 columns, 15px gap, from `global.scss`) on the container and column classes on the children: `col--N` everywhere, plus responsive `col__xs--N`, `col__sm--N`, `col__md--N` and `col__lg--N`. The responsive classes are mobile-first and apply from 481, 769, 961 and 1281px up, so they usually replace hand-written media queries. `.grid` has a `20px 0` margin; zero it with a scoped rule when the parent already pads. Classes on a child component fall through to its root, so `<FormField class="col--12 col__md--3">` works. Keep flex for a single row that needs alignment, such as right-aligned buttons. Stack things vertically with `display: grid; gap`, not `flex-direction: column`.
@@ -110,7 +108,7 @@ Each component owns its styles in a scoped SCSS block in the same file. That inc
   </div>
   ```
 
-- **Every form input goes through `FormField` (or `ListField` for comma-separated lists).** Don't hand-roll label and input markup. `FormField` provides the label, the API-name `code` chip, the input styling and an optional `hint`. `ListField` passes no hint.
+- **Every form input goes through `FormField` (or `ListField` for comma-separated lists).** Don't hand-roll label and input markup. `FormField` provides the label, the input styling and an optional `hint`. `ListField` passes no hint.
 - **Component breakpoints are `max-width` 900px and 680px.** The 680px breakpoint is the mobile layout. `global.scss` scales the root font and headings at 1024px. Prefer the grid's responsive column classes over new media queries.
 - **Name classes BEM-style after the component**, e.g. `.job-card`, `.job-card__title-row`, `.job-card__company-mark--peach`. Modifier classes can come from data: ``:class="`job-card__status--${status}`"``.
 - **Keep `src/assets/style/global.scss` global-only.** It holds base element styles plus the `.grid` and `.button` helpers. Don't add component classes to it. It has no box-sizing reset, so set `box-sizing: border-box` on anything that combines `width: 100%` with padding.

@@ -5,8 +5,6 @@
 </template>
 
 <style lang="scss" scoped>
-@use "@globalStyle/variables" as *;
-
 .site-footer {
   min-height: var(--footer-height);
   background: var(--background);

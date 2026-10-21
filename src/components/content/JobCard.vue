@@ -115,8 +115,6 @@ const status = computed(() => props.job.getAssessment().getStatus());
 </template>
 
 <style lang="scss" scoped>
-@use "@globalStyle/variables" as *;
-
 .job-card {
   display: grid;
   grid-template-columns: 46px minmax(0, 1fr) auto 34px;
