@@ -20,26 +20,26 @@ withDefaults(
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 9px;
+  gap: var(--space-2);
   color: var(--text);
-  font-weight: 650;
+  font-weight: var(--font-weight-semibold);
   text-decoration: none;
 }
 
 .brand__mark {
   display: grid;
-  width: 34px;
-  height: 34px;
+  width: var(--icon-size-md);
+  height: var(--icon-size-md);
   place-items: center;
-  border-radius: 11px;
-  background: linear-gradient(135deg, var(--color-accent-1), var(--color-accent-2));
+  border-radius: var(--radius-md);
+  background: var(--gradient-accent);
   color: var(--color-white);
   line-height: 1;
 }
 
 .brand--compact .brand__mark {
-  width: 29px;
-  height: 29px;
-  border-radius: 9px;
+  width: var(--icon-size-sm);
+  height: var(--icon-size-sm);
+  border-radius: var(--radius-sm);
 }
 </style>

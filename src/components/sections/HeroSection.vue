@@ -56,27 +56,17 @@ defineEmits<{
 
 <style lang="scss" scoped>
 .hero {
-  position: relative;
-  min-height: 300px;
-  padding: 64px 24px 48px;
-  overflow: hidden;
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--color-accent-1) 18%, var(--background)),
-    color-mix(in srgb, var(--color-accent-2) 18%, var(--background))
-  );
+  padding-block: var(--section-spacing);
+  background: var(--gradient-accent-subtle);
 }
 
 .hero__inner {
-  position: relative;
-  z-index: 1;
-  width: min(100%, 1280px);
+  width: var(--page-width);
   margin-inline: auto;
-  animation: rise-in 550ms ease both;
+  animation: rise-in var(--duration-enter) ease both;
 }
 
 .hero__loading {
-  margin: 0;
   color: var(--text-muted);
   text-align: center;
 }
@@ -84,25 +74,12 @@ defineEmits<{
 @keyframes rise-in {
   from {
     opacity: 0;
-    transform: translateY(14px);
+    transform: translateY(var(--space-3));
   }
 
   to {
     opacity: 1;
     transform: translateY(0);
-  }
-}
-
-@media (max-width: 900px) {
-  .hero__inner {
-    width: min(100%, 760px);
-  }
-}
-
-@media (max-width: 680px) {
-  .hero {
-    min-height: auto;
-    padding: 52px 18px 33px;
   }
 }
 </style>
