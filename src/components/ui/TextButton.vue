@@ -5,8 +5,6 @@
 </template>
 
 <style lang="scss" scoped>
-@use '@globalStyle/variables' as *;
-
 .text-button {
   margin-top: 15px;
   padding: 6px;

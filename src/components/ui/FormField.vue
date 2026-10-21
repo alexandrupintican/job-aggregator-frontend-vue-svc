@@ -16,8 +16,6 @@ defineProps<{
 </template>
 
 <style lang="scss" scoped>
-@use "@globalStyle/variables" as *;
-
 .form-field {
   display: grid;
   min-width: 0;

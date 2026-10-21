@@ -17,8 +17,6 @@ withDefaults(
 </template>
 
 <style lang="scss" scoped>
-@use "@globalStyle/variables" as *;
-
 .spinner {
   display: inline-block;
   flex: 0 0 auto;

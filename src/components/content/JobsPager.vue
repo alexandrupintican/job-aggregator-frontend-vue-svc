@@ -43,8 +43,6 @@ const hasNext = computed(() => props.offset + props.shown < props.total)
 </template>
 
 <style lang="scss" scoped>
-@use '@globalStyle/variables' as *;
-
 .jobs-pager {
   display: flex;
   align-items: center;

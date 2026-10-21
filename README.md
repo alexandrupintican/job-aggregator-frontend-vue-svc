@@ -131,7 +131,7 @@ Then open `http://localhost:8080`.
 
 ## Using the search
 
-The search form exposes every query parameter of `GET /api/jobs`. Each field is labelled with its parameter name:
+The search form exposes every query parameter of `GET /api/jobs`. Each field maps to one parameter:
 
 | Field | Parameter | Behaviour |
 | ----- | --------- | --------- |

@@ -109,8 +109,6 @@ defineEmits<{
 </template>
 
 <style lang="scss" scoped>
-@use "@globalStyle/variables" as *;
-
 .filter-panel {
   padding: 16px;
   border: 1px solid var(--border);

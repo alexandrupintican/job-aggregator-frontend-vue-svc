@@ -55,8 +55,6 @@ defineEmits<{
 </template>
 
 <style lang="scss" scoped>
-@use "@globalStyle/variables" as *;
-
 .hero {
   position: relative;
   min-height: 300px;

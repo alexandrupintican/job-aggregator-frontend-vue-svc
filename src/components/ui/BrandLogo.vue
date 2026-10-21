@@ -17,8 +17,6 @@ withDefaults(
 </template>
 
 <style lang="scss" scoped>
-@use '@globalStyle/variables' as *;
-
 .brand {
   display: inline-flex;
   align-items: center;

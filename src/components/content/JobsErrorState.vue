@@ -24,8 +24,6 @@ defineEmits<{
 </template>
 
 <style lang="scss" scoped>
-@use '@globalStyle/variables' as *;
-
 .error-state {
   display: flex;
   min-height: 260px;

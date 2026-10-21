@@ -25,8 +25,6 @@ defineEmits<{
 </template>
 
 <style lang="scss" scoped>
-@use "@globalStyle/variables" as *;
-
 .job-filters {
   width: calc(100% - 48px);
   margin-inline: auto;

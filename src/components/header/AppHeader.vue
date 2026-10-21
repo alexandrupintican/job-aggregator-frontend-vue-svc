@@ -15,8 +15,6 @@ import BrandLogo from "@/components/ui/BrandLogo.vue";
 </template>
 
 <style lang="scss" scoped>
-@use "@globalStyle/variables" as *;
-
 .site-header {
   position: relative;
   z-index: 2;

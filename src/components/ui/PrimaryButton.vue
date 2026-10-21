@@ -21,8 +21,6 @@ withDefaults(
 </template>
 
 <style lang="scss" scoped>
-@use "@globalStyle/variables" as *;
-
 .primary-button {
   display: inline-block;
   min-height: 44px;

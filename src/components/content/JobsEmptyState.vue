@@ -16,8 +16,6 @@ defineEmits<{
 </template>
 
 <style lang="scss" scoped>
-@use '@globalStyle/variables' as *;
-
 .empty-state {
   display: flex;
   min-height: 260px;
