@@ -26,14 +26,8 @@ import BrandLogo from "@/components/ui/BrandLogo.vue";
   display: flex;
   align-items: center;
   justify-content: space-between;
-  width: calc(100% - 48px);
-  height: 100%;
+  width: var(--page-width);
   margin-inline: auto;
-}
-
-@media (max-width: 680px) {
-  .site-header__inner {
-    width: calc(100% - 36px);
-  }
+  height: 100%;
 }
 </style>

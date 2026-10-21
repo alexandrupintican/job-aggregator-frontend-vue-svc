@@ -2,7 +2,8 @@
 import { computed } from "vue";
 import FormField from "@/components/ui/FormField.vue";
 import ListField from "@/components/ui/ListField.vue";
-import PrimaryButton from "@/components/ui/PrimaryButton.vue";
+import AppButton from "@/components/ui/AppButton.vue";
+import SectionHeading from "@/components/ui/SectionHeading.vue";
 import Spinner from "@/components/ui/Spinner.vue";
 import type { CollectorPreferences } from "@/types/models/jobListings";
 
@@ -56,13 +57,11 @@ const postedWithinDays = computed({
 
 <template>
   <form class="preferences-form grid" @submit.prevent="$emit('save')">
-    <div class="preferences-form__header col--12">
-      <h2>Collector preferences</h2>
-      <p>
-        What the collector looks for. Saved to the server and used on its next
-        run. Every field must be comma separated.
-      </p>
-    </div>
+    <SectionHeading
+      class="col--12"
+      title="Collector preferences"
+      description="What the collector looks for. Saved to the server and used on its next run. Every field must be comma separated."
+    />
 
     <ListField
       v-model="model.roles"
@@ -138,30 +137,28 @@ const postedWithinDays = computed({
         {{ status }}
       </p>
       <div class="preferences-form__actions">
-        <button
+        <AppButton
           v-if="saved && !running"
-          class="preferences-form__run"
+          variant="secondary"
           :disabled="saving || starting"
-          type="button"
           @click="$emit('run')"
         >
           {{ starting ? "Starting…" : "Run collector" }}
-        </button>
-        <button
-          class="preferences-form__revert"
+        </AppButton>
+        <AppButton
+          variant="text"
           :disabled="saving || running"
-          type="button"
           @click="$emit('reload')"
         >
-          <p>Revert</p>
-        </button>
-        <PrimaryButton
+          Revert
+        </AppButton>
+        <AppButton
           class="preferences-form__save"
           :disabled="saving || running"
           type="submit"
         >
           {{ saving ? "Saving…" : "Save preferences" }}
-        </PrimaryButton>
+        </AppButton>
       </div>
     </div>
   </form>
@@ -171,90 +168,43 @@ const postedWithinDays = computed({
 .preferences-form {
   align-items: end;
   margin: 0;
-  padding: 20px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  padding: var(--panel-padding);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-lg);
   background: var(--surface);
-  box-shadow: 0 14px 42px rgba(0, 0, 0, 0.35);
-}
-
-.preferences-form__header h2 {
-  margin: 0;
-  color: var(--text);
-  font-weight: 400;
-}
-
-.preferences-form__header p {
-  margin: 6px 0 0;
-  color: var(--text-muted);
+  box-shadow: var(--shadow-panel);
 }
 
 .preferences-form__footer {
   display: grid;
-  gap: 12px;
-  padding-top: 14px;
-  border-top: 1px solid var(--border);
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  border-top: var(--border-width) solid var(--border);
 }
 
 .preferences-form__status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   color: var(--color-accent-1);
 }
 
-.preferences-form__status .spinner {
-  margin-right: 8px;
-}
-
 .preferences-form__status--error {
-  color: #e08a9a;
+  color: var(--color-danger);
 }
 
 .preferences-form__status--warning {
-  color: #e0b46a;
+  color: var(--color-warning);
 }
 
 .preferences-form__actions {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
-.preferences-form__revert {
-  padding: 8px 6px;
-  border: 0;
-  background: transparent;
-  color: var(--color-accent-1);
-  font-weight: 650;
-  cursor: pointer;
-}
-
-.preferences-form__run {
-  min-height: 44px;
-  padding: 0 15px;
-  border: 1px solid var(--color-accent-1);
-  border-radius: 7px;
-  background: transparent;
-  color: var(--color-accent-1);
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 160ms ease;
-}
-
-.preferences-form__run:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--color-accent-1) 15%, transparent);
-}
-
-.preferences-form__run:disabled,
-.preferences-form__revert:disabled {
-  cursor: wait;
-  opacity: 0.6;
-}
-
-@media (max-width: 680px) {
-  .preferences-form {
-    padding: 14px;
-  }
-
+@media (max-width: 768px) {
   .preferences-form__save {
     flex: 1;
   }

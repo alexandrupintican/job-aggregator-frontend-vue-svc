@@ -4,6 +4,8 @@ import JobCard from "@/components/content/JobCard.vue";
 import JobsEmptyState from "@/components/content/JobsEmptyState.vue";
 import JobsErrorState from "@/components/content/JobsErrorState.vue";
 import JobsPager from "@/components/content/JobsPager.vue";
+import Chip from "@/components/ui/Chip.vue";
+import SectionHeading from "@/components/ui/SectionHeading.vue";
 import Spinner from "@/components/ui/Spinner.vue";
 import type { JobPageModel } from "@/models/JobService/jobPageModel";
 
@@ -36,22 +38,16 @@ const resultLabel = computed(() => {
     aria-labelledby="jobs-heading"
     :aria-busy="loading"
   >
-    <div class="section-heading">
-      <div>
-        <h2 id="jobs-heading"><span>Aggregator results</span></h2>
-      </div>
-      <p
-        v-if="collecting"
-        class="result-count result-count--collecting"
-        aria-live="polite"
-      >
-        <Spinner :size="12" />
+    <SectionHeading id="jobs-heading" class="jobs-section__heading">
+      <template #title>
+        <span class="jobs-section__title">Aggregator results</span>
+      </template>
+      <Chip v-if="collecting" aria-live="polite">
+        <Spinner />
         Collecting new listings…
-      </p>
-      <p v-else-if="!error" class="result-count" aria-live="polite">
-        {{ resultLabel }}
-      </p>
-    </div>
+      </Chip>
+      <Chip v-else-if="!error" aria-live="polite">{{ resultLabel }}</Chip>
+    </SectionHeading>
 
     <JobsErrorState v-if="error" :message="error" @retry="$emit('retry')" />
     <template v-else-if="page">
@@ -78,69 +74,27 @@ const resultLabel = computed(() => {
 
 <style lang="scss" scoped>
 .jobs-section {
-  width: calc(100% - 48px);
+  width: var(--page-width);
   margin-inline: auto;
-  padding-top: 67px;
-  padding-bottom: 59px;
+  padding-block: var(--section-spacing);
 }
 
-.section-heading {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  margin-bottom: 22px;
+.jobs-section__heading {
+  margin-bottom: var(--space-4);
 }
 
-.section-heading h2 {
-  margin: 0;
-  color: var(--text);
-  font-weight: 400;
-}
-
-.section-heading h2 span {
+.jobs-section__title {
   color: var(--color-accent-1);
-  font-weight: 800;
-}
-
-.result-count {
-  padding: 7px 10px;
-  border-radius: 20px;
-  background: var(--surface);
-  color: var(--text-muted);
-  font-weight: 600;
-}
-
-.result-count--collecting {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
+  font-weight: var(--font-weight-black);
 }
 
 .job-list {
   display: grid;
-  gap: 11px;
+  gap: var(--space-3);
 }
 
 .job-list--loading {
-  opacity: 0.55;
-  transition: opacity 160ms ease;
-}
-
-@media (max-width: 680px) {
-  .jobs-section {
-    width: calc(100% - 36px);
-    padding-top: 44px;
-    padding-bottom: 42px;
-  }
-
-  .section-heading {
-    align-items: flex-start;
-    gap: 10px;
-  }
-
-  .result-count {
-    margin-top: 23px;
-    white-space: nowrap;
-  }
+  opacity: var(--opacity-disabled);
+  transition: opacity var(--transition-fast);
 }
 </style>

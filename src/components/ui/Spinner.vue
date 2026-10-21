@@ -1,29 +1,19 @@
-<script setup lang="ts">
-withDefaults(
-  defineProps<{
-    /** Diameter in px. */
-    size?: number;
-  }>(),
-  { size: 14 },
-);
-</script>
-
 <template>
-  <span
-    class="spinner"
-    :style="{ width: `${size}px`, height: `${size}px` }"
-    aria-hidden="true"
-  ></span>
+  <!-- Sized in em so it always matches the text it sits next to. -->
+  <span class="spinner" aria-hidden="true"></span>
 </template>
 
 <style lang="scss" scoped>
 .spinner {
   display: inline-block;
+  box-sizing: border-box;
+  width: 1em;
+  height: 1em;
   flex: 0 0 auto;
-  border: 2px solid var(--border);
+  border: calc(2 * var(--border-width)) solid var(--border);
   border-top-color: var(--color-accent-1);
-  border-radius: 50%;
-  animation: spin 800ms linear infinite;
+  border-radius: var(--radius-round);
+  animation: spin var(--duration-spin) linear infinite;
 }
 
 @keyframes spin {

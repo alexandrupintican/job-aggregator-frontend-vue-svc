@@ -21,6 +21,100 @@
 
   --font-family-primary: #{$font-family-primary};
 
+  // Status colors and their background tints
+  --color-success: #{$color-success};
+  --color-warning: #{$color-warning};
+  --color-danger: #{$color-danger};
+  --tint-strength: #{$tint-strength};
+  --color-accent-1-tint: color-mix(
+    in srgb,
+    var(--color-accent-1) var(--tint-strength),
+    transparent
+  );
+  --color-success-tint: color-mix(
+    in srgb,
+    var(--color-success) var(--tint-strength),
+    transparent
+  );
+  --color-warning-tint: color-mix(
+    in srgb,
+    var(--color-warning) var(--tint-strength),
+    transparent
+  );
+  --color-danger-tint: color-mix(
+    in srgb,
+    var(--color-danger) var(--tint-strength),
+    transparent
+  );
+  --gradient-accent: linear-gradient(
+    135deg,
+    var(--color-accent-1),
+    var(--color-accent-2)
+  );
+  --gradient-accent-subtle: linear-gradient(
+    135deg,
+    color-mix(
+      in srgb,
+      var(--color-accent-1) var(--tint-strength),
+      var(--background)
+    ),
+    color-mix(
+      in srgb,
+      var(--color-accent-2) var(--tint-strength),
+      var(--background)
+    )
+  );
+
+  // Spacing
+  --space-1: #{$space-1};
+  --space-2: #{$space-2};
+  --space-3: #{$space-3};
+  --space-4: #{$space-4};
+  --space-5: #{$space-5};
+  --space-6: #{$space-6};
+  --space-7: #{$space-7};
+  --space-8: #{$space-8};
+  --page-gutter: var(--space-5);
+  // Content column of every section: full width minus a gutter on each side.
+  --page-width: calc(100% - 2 * var(--page-gutter));
+  --section-spacing: var(--space-7);
+  --panel-padding: var(--space-5);
+
+  // Shape
+  --border-width: #{$border-width};
+  --radius-sm: #{$radius-sm};
+  --radius-md: #{$radius-md};
+  --radius-lg: #{$radius-lg};
+  --radius-round: #{$radius-round};
+  --shadow-panel: 0 #{$space-3} #{$space-7} #{$shadow-color};
+  --shadow-raised: 0 #{$space-2} #{$space-5} #{$shadow-color};
+  --hover-lift: #{$hover-lift};
+
+  // Controls and icons
+  --control-height: #{$control-height};
+  --control-padding-x: #{$control-padding-x};
+  --icon-size-sm: #{$icon-size-sm};
+  --icon-size-md: #{$icon-size-md};
+  --icon-size-lg: #{$icon-size-lg};
+
+  // Typography
+  --font-weight-regular: #{$font-weight-regular};
+  --font-weight-medium: #{$font-weight-medium};
+  --font-weight-semibold: #{$font-weight-semibold};
+  --font-weight-bold: #{$font-weight-bold};
+  --font-weight-black: #{$font-weight-black};
+  --line-height-relaxed: #{$line-height-relaxed};
+
+  // Effects and motion
+  --opacity-disabled: #{$opacity-disabled};
+  --transition-fast: #{$duration-fast} ease;
+  --duration-enter: #{$duration-enter};
+  --duration-spin: #{$duration-spin};
+
+  // Layout
+  --state-min-height: #{$state-min-height};
+  --measure-narrow: #{$measure-narrow};
+
   font: 18px/145% var(--font-family-primary);
   color-scheme: light dark;
   color: var(--text);
@@ -30,7 +124,10 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  @media (max-width: 1024px) {
+  @media (max-width: 1280px) {
     font-size: 16px;
+    --page-gutter: var(--space-4);
+    --section-spacing: var(--space-6);
+    --panel-padding: var(--space-4);
   }
 }

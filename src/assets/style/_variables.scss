@@ -7,6 +7,9 @@ $color-accent-1: #455eb5;
 $color-accent-2: #673fd7;
 $color-surface: #15151d;
 $color-text-muted: #a1a1aa;
+$color-success: #9ad3b2;
+$color-warning: #e0d08a;
+$color-danger: #e08a9a;
 
 // FONTS
 $font-family-primary: "Inter", sans-serif;
@@ -17,10 +20,63 @@ $container-max-width: 1920px;
 $footer-height: 80px;
 $header-height: 80px;
 
+// SPACING (4px scale). Every margin, padding and gap uses one of these.
+$space-1: 4px;
+$space-2: 8px;
+$space-3: 12px;
+$space-4: 16px;
+$space-5: 24px;
+$space-6: 32px;
+$space-7: 48px;
+$space-8: 64px;
+
+// BORDERS
+$border-width: 1px;
+
+// RADII
+$radius-sm: 4px;
+$radius-md: 8px;
+$radius-lg: 12px;
+$radius-round: 50%;
+
+// CONTROLS (buttons and inputs share one height and horizontal padding)
+$control-height: 44px;
+$control-padding-x: $space-4;
+
+// ICONS
+$icon-size-sm: 24px;
+$icon-size-md: 32px;
+$icon-size-lg: 48px;
+
+// FONT WEIGHTS
+$font-weight-regular: 400;
+$font-weight-medium: 500;
+$font-weight-semibold: 600;
+$font-weight-bold: 700;
+$font-weight-black: 800;
+
+// LINE HEIGHTS
+$line-height-relaxed: 1.6;
+
+// EFFECTS
+$tint-strength: 15%;
+$opacity-disabled: 0.6;
+$shadow-color: rgba($color-black, 0.35);
+$hover-lift: -2px;
+
+// MOTION
+$duration-fast: 160ms;
+$duration-enter: 400ms;
+$duration-spin: 800ms;
+
+// LAYOUT
+$state-min-height: 256px;
+$measure-narrow: 360px;
+
 // GRID
 $grid-columns: 12;
-$grid-gap: 15px !default;
-$grid-margin: 20px;
+$grid-gap: $space-4 !default;
+$grid-margin: $space-5;
 
 // BREAKPOINTS
 $breakpoints: (

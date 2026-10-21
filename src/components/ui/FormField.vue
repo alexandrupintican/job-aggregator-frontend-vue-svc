@@ -19,30 +19,22 @@ defineProps<{
 .form-field {
   display: grid;
   min-width: 0;
-  gap: 5px;
+  gap: var(--space-2);
 }
 
 .form-field__label {
   color: var(--text);
-  font-weight: 700;
-}
-
-code {
-  margin-left: 4px;
-  padding: 1px 4px;
-  border-radius: 3px;
-  background: var(--border);
-  color: var(--text-muted);
-  font-weight: 500;
+  font-weight: var(--font-weight-bold);
 }
 
 :slotted(input) {
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
-  padding: 7px 8px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  min-height: var(--control-height);
+  padding: 0 var(--space-3);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-md);
   background: var(--background);
   color: var(--text);
 }

@@ -45,7 +45,7 @@ A responsive job-search frontend built with **Vue 3**, **TypeScript**, **Vite**,
 │   │   ├── footer/
 │   │   ├── header/
 │   │   ├── sections/     # HeroSection, JobFiltersSection, JobsSection
-│   │   └── ui/           # BrandLogo, PrimaryButton, TextButton, Spinner, FormField, ListField
+│   │   └── ui/           # BrandLogo, AppButton, Chip, SectionHeading, StateMessage, Spinner, FormField, ListField
 │   ├── composables/      # useJobFilters, useCollectorConfig, usePages
 │   ├── layouts/
 │   ├── models/
@@ -154,7 +154,7 @@ The search form exposes every query parameter of `GET /api/jobs`. Each field map
 ## Architecture
 
 - **Pages** are thin compositions of section components. The router has a single catch-all route; `views/PageView.vue` picks the page from state (`usePages`), so the URL never changes.
-- **Components** are split into `sections/` (page-level blocks), `content/` (reusable blocks), and `ui/` (small shared primitives). Each owns its scoped styles. Colors come from the CSS custom properties in `assets/style/_theme.scss`, text size comes from the HTML tag (`h1`/`h2`/`p`) rather than per-component `font-size`, and layouts use the global 12-column `.grid` with `col--N` / `col__{xs,sm,md,lg}--N` classes.
+- **Components** are split into `sections/` (page-level blocks), `content/` (reusable blocks), and `ui/` (small shared primitives). Each owns its scoped styles. Colors, spacing, radii, weights, shadows and durations all come from design tokens in `assets/style/_variables.scss`, exposed as CSS custom properties in `_theme.scss` (no raw numbers in components), text size comes from the HTML tag (`h1`/`h2`/`p`) rather than per-component `font-size`, and layouts use the global 12-column `.grid` with `col--N` / `col__{xs,sm,md,lg}--N` classes.
 - **Composables** hold the logic. `useJobFilters` keeps the filters bound to the form, calls the API when they are applied, and exposes the current page, loading, and error state. `useCollectorConfig` loads and saves the collector preferences.
 - **API** (`src/api/api.ts`) wraps `fetch`, prefixes requests with `VITE_API_URL`, and exposes `jobService.getJobs(query)`.
 - **Models** (`src/models/JobService/`) are read-only classes around API responses (`JobPageModel`, `JobListingModel`, …) with `getX()` methods. `JobListingQueryModel` builds the query string.

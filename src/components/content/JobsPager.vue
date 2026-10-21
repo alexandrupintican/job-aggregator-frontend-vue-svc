@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import AppButton from '@/components/ui/AppButton.vue'
 
 const props = defineProps<{
   total: number
@@ -22,23 +23,21 @@ const hasNext = computed(() => props.offset + props.shown < props.total)
 
 <template>
   <nav class="jobs-pager" aria-label="Results pages">
-    <button
-      class="jobs-pager__button"
-      type="button"
+    <AppButton
+      variant="secondary"
       :disabled="disabled || !hasPrevious"
       @click="$emit('change', offset - limit)"
     >
       <span aria-hidden="true">←</span> Previous
-    </button>
+    </AppButton>
     <p class="jobs-pager__range">{{ rangeLabel }}</p>
-    <button
-      class="jobs-pager__button"
-      type="button"
+    <AppButton
+      variant="secondary"
       :disabled="disabled || !hasNext"
       @click="$emit('change', offset + limit)"
     >
       Next <span aria-hidden="true">→</span>
-    </button>
+    </AppButton>
   </nav>
 </template>
 
@@ -47,33 +46,12 @@ const hasNext = computed(() => props.offset + props.shown < props.total)
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-top: 18px;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
 }
 
 .jobs-pager__range {
   color: var(--text-muted);
-  font-weight: 600;
-}
-
-.jobs-pager__button {
-  padding: 8px 12px;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  background: var(--surface);
-  color: var(--color-accent-1);
-  font-weight: 650;
-  cursor: pointer;
-  transition: border-color 160ms ease, background 160ms ease;
-}
-
-.jobs-pager__button:hover:not(:disabled) {
-  border-color: var(--color-accent-1);
-  background: color-mix(in srgb, var(--color-accent-1) 12%, var(--surface));
-}
-
-.jobs-pager__button:disabled {
-  color: var(--color-secondary);
-  cursor: default;
+  font-weight: var(--font-weight-semibold);
 }
 </style>

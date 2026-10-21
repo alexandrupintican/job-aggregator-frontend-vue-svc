@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import FormField from "@/components/ui/FormField.vue";
-import PrimaryButton from "@/components/ui/PrimaryButton.vue";
+import AppButton from "@/components/ui/AppButton.vue";
 import type { JobListingQuery } from "@/types/models/jobListings";
 
 const model = defineModel<JobListingQuery>({ required: true });
@@ -97,12 +97,8 @@ defineEmits<{
         <input v-model.number="model.offset" min="0" type="number" />
       </FormField>
       <div class="filter-panel__actions col--12 col__md--12">
-        <button class="filter-reset" type="button" @click="$emit('clear')">
-          <p>Reset</p>
-        </button>
-        <PrimaryButton class="filter-apply" type="submit">
-          Apply filters
-        </PrimaryButton>
+        <AppButton variant="text" @click="$emit('clear')">Reset</AppButton>
+        <AppButton class="filter-apply" type="submit">Apply filters</AppButton>
       </div>
     </div>
   </form>
@@ -110,11 +106,11 @@ defineEmits<{
 
 <style lang="scss" scoped>
 .filter-panel {
-  padding: 16px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  padding: var(--panel-padding);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-lg);
   background: var(--surface);
-  box-shadow: 0 14px 42px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--shadow-panel);
 }
 
 .filter-panel__grid {
@@ -125,23 +121,10 @@ defineEmits<{
 .filter-panel__actions {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
-.filter-reset {
-  padding: 8px 6px;
-  border: 0;
-  background: transparent;
-  color: var(--color-accent-1);
-  font-weight: 650;
-  cursor: pointer;
-}
-
-@media (max-width: 680px) {
-  .filter-panel {
-    padding: 13px;
-  }
-
+@media (max-width: 768px) {
   .filter-apply {
     flex: 1;
   }
