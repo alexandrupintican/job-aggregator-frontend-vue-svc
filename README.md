@@ -25,6 +25,7 @@ A responsive job-search frontend built with **Vue 3**, **TypeScript**, **Vite**,
 | TypeScript | Static typing |
 | Vite | Build tool and development server |
 | Vue Router | Single catch-all route; pages are switched by state |
+| @unhead/vue | Per-page `<head>` tags (title, description, Open Graph) |
 | SCSS | Styling |
 | Docker and Nginx | Containerized production deployment |
 
@@ -41,25 +42,27 @@ A responsive job-search frontend built with **Vue 3**, **TypeScript**, **Vite**,
 │   ├── assets/
 │   │   └── style/        # _variables, _theme (CSS custom properties), _mixins (grid columns), global.scss
 │   ├── components/
-│   │   ├── content/      # JobCard, JobFilterForm, CollectorPreferencesForm, JobsPager, states
+│   │   ├── content/      # ContentHomepage, JobCard, JobFilterForm, CollectorPreferencesForm, JobsPager, states
 │   │   ├── footer/
 │   │   ├── header/
 │   │   ├── sections/     # HeroSection, JobFiltersSection, JobsSection
 │   │   └── ui/           # BrandLogo, AppButton, Chip, SectionHeading, StateMessage, Spinner, FormField, ListField
-│   ├── composables/      # useJobFilters, useCollectorConfig, usePages
-│   ├── layouts/
+│   ├── composables/      # useJobFilters, useCollectorConfig, usePages, useLayout
+│   ├── layouts/          # DefaultLayout: header, <main>, footer
 │   ├── models/
 │   │   └── JobService/   # Read-only model classes wrapping API responses
-│   ├── pages/
-│   ├── plugins/
+│   ├── pages/            # HomePage: head meta + ContentHomepage
+│   ├── plugins/          # vault, breakpoint
 │   ├── router/
 │   ├── types/
 │   │   └── models/       # jobListings.d.ts: raw API response and query types
-│   ├── utils/
-│   ├── views/
-│   ├── App.vue
-│   ├── entry.ts
-│   └── main.ts
+│   ├── utils/            # enums.ts (PageAliases, LayoutAliases), utils.ts
+│   ├── views/            # PageView: picks the page from state
+│   ├── App.vue           # Picks the layout from state, renders RouterView inside it
+│   ├── AppRender.vue     # Root component: App inside <Suspense>
+│   ├── entry.ts          # Creates the app and mounts it once the router is ready
+│   └── main.ts           # createCustomApp(): global styles, unhead, vault, router
+├── docs/                 # Local notes (gitignored, excluded from the Docker build)
 ├── .env                  # VITE_API_URL for local development (gitignored)
 ├── compose.yaml          # Runs the frontend container
 ├── Dockerfile
@@ -163,13 +166,15 @@ The search form exposes every query parameter of `GET /api/jobs`. Each field map
 
 ## Architecture
 
-- **Pages** are thin compositions of section components. The router has a single catch-all route; `views/PageView.vue` picks the page from state (`usePages`), so the URL never changes.
+- **Bootstrap**: `index.html` loads `entry.ts`, which calls `createCustomApp()` from `main.ts` and mounts the app once the router is ready.
+- **Layouts** wrap every page. `App.vue` picks the layout from state (`useLayout`) and renders the router view inside it. `DefaultLayout` provides the header, `<main>` and footer.
+- **Pages** set their own `<head>` tags with `useHead()` and render one content component (`HomePage` → `ContentHomepage`), which composes the section components. The router has a single catch-all route; `views/PageView.vue` picks the page from state (`usePages`), so the URL never changes.
 - **Components** are split into `sections/` (page-level blocks), `content/` (reusable blocks), and `ui/` (small shared primitives). Each owns its scoped styles. Colors, spacing, radii, weights, shadows and durations all come from design tokens in `assets/style/_variables.scss`, exposed as CSS custom properties in `_theme.scss` (no raw numbers in components), text size comes from the HTML tag (`h1`/`h2`/`p`) rather than per-component `font-size`, and layouts use the global 12-column `.grid` with `col--N` / `col__{xs,sm,md,lg}--N` classes.
 - **Composables** hold the logic. `useJobFilters` keeps the filters bound to the form, calls the API when they are applied, and exposes the current page, loading, and error state. `useCollectorConfig` loads and saves the collector preferences.
 - **API** (`src/api/api.ts`) wraps `fetch`, prefixes requests with `VITE_API_URL`, and exposes `jobService.getJobs(query)`.
 - **Models** (`src/models/JobService/`) are read-only classes around API responses (`JobPageModel`, `JobListingModel`, …) with `getX()` methods. `JobListingQueryModel` builds the query string.
 - **Types** (`src/types/models/jobListings.d.ts`) describe the raw API payloads.
-- **Plugins** register app-wide functionality, including the `vault` used for shared state.
+- **Plugins** hold app-wide functionality: the `vault` used for shared state (installed in `createCustomApp()`) and the `breakpoint` flags.
 
 ---
 

@@ -11,12 +11,14 @@ This app is a Vue 3 SPA built with `<script setup lang="ts">`, Vite and SCSS. It
 
 | Kind | Location | Example |
 | --- | --- | --- |
-| Page: a thin composition of sections | `src/pages/` | `HomePage.vue` |
+| Page: head meta + one content component | `src/pages/` | `HomePage.vue` |
+| Page content: wires composables into sections | `src/components/content/` | `ContentHomepage` |
 | Page-level section | `src/components/sections/` | `HeroSection`, `JobFiltersSection`, `JobsSection` |
 | Reusable content block | `src/components/content/` | `JobCard`, `JobFilterForm`, `CollectorPreferencesForm`, `JobsPager`, `JobsEmptyState`, `JobsErrorState` |
 | Small shared UI primitive | `src/components/ui/` | `BrandLogo`, `AppButton`, `Chip`, `SectionHeading`, `StateMessage`, `Spinner`, `FormField`, `ListField` |
 | App shell | `src/components/header/`, `src/components/footer/`, `src/layouts/` | `AppHeader`, `DefaultLayout` |
-| Composition logic | `src/composables/` | `useJobFilters`, `useCollectorConfig`, `usePages` |
+| Composition logic | `src/composables/` | `useJobFilters`, `useCollectorConfig`, `usePages`, `useLayout` |
+| Page and layout aliases | `src/utils/enums.ts` | `PageAliases`, `LayoutAliases` |
 | API service | `src/api/` | `api.ts` (`jobService.getJobs`) |
 | Read-only model classes, one per file | `src/models/JobService/` | `JobPageModel`, `JobListingModel`, `JobListingQueryModel` |
 | Raw API types, all in one file | `src/types/models/jobListings.d.ts` | `JobListing`, `JobPage`, `JobListingQuery` |
@@ -26,15 +28,33 @@ Use the `@/` alias for imports from `src`.
 
 ## 1. Pages are thin; sections are components
 
-A page only does two things: it calls composables, and it wires their state into section components through props, `v-model` and events. It should contain no large inline markup or styles. Every visually distinct block becomes its own `.vue` file. That way a change to, say, the hero shows up everywhere the hero is used, and the page reads like an outline.
+A page does two things. It sets its head meta with `useHead()` from `@unhead/vue`, and it renders one content component from `src/components/content/`. The page doesn't wrap itself in a layout, because `App.vue` already renders the active layout around `<RouterView />` (see pattern 3).
 
 ```vue
 <!-- src/pages/HomePage.vue -->
 <script setup lang="ts">
+import ContentHomepage from "@/components/content/ContentHomepage.vue";
+import { useHead } from "@unhead/vue";
+
+useHead({
+  title: "…",
+  meta: [{ name: "description", content: "…" }],
+});
+</script>
+
+<template>
+  <ContentHomepage />
+</template>
+```
+
+The content component calls the page composables and wires their state into section components through props, `v-model` and events. It contains no large inline markup or styles. Every visually distinct block becomes its own `.vue` file. That way a change to, say, the hero shows up everywhere the hero is used, and the content component reads like an outline.
+
+```vue
+<!-- src/components/content/ContentHomepage.vue (trimmed) -->
+<script setup lang="ts">
 import JobFiltersSection from "@/components/sections/JobFiltersSection.vue";
 import JobsSection from "@/components/sections/JobsSection.vue";
 import { useJobFilters } from "@/composables/useJobFilters";
-import DefaultLayout from "@/layouts/DefaultLayout.vue";
 
 const {
   filters,
@@ -48,27 +68,25 @@ const {
 </script>
 
 <template>
-  <DefaultLayout>
-    <JobFiltersSection
-      v-model="filters"
-      @apply="applyFilters"
-      @clear="clearFilters"
-    />
-    <JobsSection
-      :error="error"
-      :loading="loading"
-      :page="page"
-      @clear="clearFilters"
-      @page="goToOffset"
-      @retry="applyFilters"
-    />
-  </DefaultLayout>
+  <JobFiltersSection
+    v-model="filters"
+    @apply="applyFilters"
+    @clear="clearFilters"
+  />
+  <JobsSection
+    :error="error"
+    :loading="loading"
+    :page="page"
+    @clear="clearFilters"
+    @page="goToOffset"
+    @retry="applyFilters"
+  />
 </template>
 ```
 
 Rules for components:
 
-- **Data in through props or `defineModel`, intent out through `defineEmits`.** Sections and content blocks don't call page composables such as `useJobFilters` themselves. Composable state is per-instance unless it's vault-backed, so a section that called it would get its own disconnected copy. Taking props also keeps the component reusable on other pages.
+- **Data in through props or `defineModel`, intent out through `defineEmits`.** Apart from the page's content component (`ContentHomepage`), sections and content blocks don't call page composables such as `useJobFilters` themselves. Composable state is per-instance unless it's vault-backed, so a section that called it would get its own disconnected copy. Taking props also keeps the component reusable on other pages.
 - **Forward events up rather than handling them in the middle.** `JobsSection` re-emits `clear` from `JobsEmptyState`, `retry` from `JobsErrorState` and `page` (the new offset) from `JobsPager`, and the page decides what each one means.
 - **Prefer a component to a shared class.** If two components need the same styled markup, extract a `ui/` component with props for the variants. For example, `<BrandLogo compact />` is the smaller logo. `AppButton` is the only button: `variant="primary"` (Apply filters, Save preferences, View listing), `"secondary"` (Run collector, pager, the job card's save icon with `icon`) or `"text"` (Reset, Revert, Clear filters, Try again). Pass `href` for a link; `target`, `rel` and `aria-label` fall through. All variants share one height, padding and radius and have no margins, so parents space them with `gap`. `Chip` is every small label, `SectionHeading` is every h2 + description block, and `StateMessage` is the shared body of `JobsEmptyState` and `JobsErrorState`.
 - Use typed macros: `defineProps<{ job: JobListingModel }>()`, and `withDefaults(...)` for optional booleans.
@@ -120,7 +138,7 @@ Each component owns its styles in a scoped SCSS block in the same file. That inc
 
 The router has one catch-all route that renders `src/views/PageView.vue`. `PageView` picks which page to show from `usePages().pageRef`, and the URL doesn't change. To add a page:
 
-1. Add an alias in `src/utils/pages.ts`:
+1. Add an alias in `src/utils/enums.ts`:
    ```ts
    export enum PageAliases {
      HOME_PAGE = "homePage",
@@ -136,16 +154,16 @@ The router has one catch-all route that renders `src/views/PageView.vue`. `PageV
      ),
    };
    ```
-3. Create `src/pages/SavedJobsPage.vue` as a thin page made of section components (pattern 1).
+3. Create `src/components/content/ContentSavedJobs.vue`, which wires composables into section components, and `src/pages/SavedJobsPage.vue`, which calls `useHead()` and renders it (pattern 1).
 4. Navigate with `usePages().setPage(PageAliases.SAVED_JOBS_PAGE)`.
 
 Don't add a new route to `src/router/index.ts` for an ordinary page. If the user explicitly wants real URLs, such as deep links or the back button, point out that this is an architectural change and confirm it first.
 
-`PageView` renders `AppHeader`/`AppFooter`. `HomePage` also wraps itself in `DefaultLayout`, which now only renders a `<main>`; check with the user before giving new pages a different layout.
+Layouts work the same way one level up. `App.vue` picks a layout from its `Layouts` map with `useLayout().layoutRef` (vault-backed, values from `LayoutAliases`, default `defaultLayout`) and renders `<RouterView />` in its slot. `DefaultLayout` renders `AppHeader`, a `<main class="content">` around the slot, and `AppFooter`, so pages never render the header, footer or `<main>` themselves. To add a layout, add an alias to `LayoutAliases`, add a key equal to the enum value to `Layouts`, and switch with `useLayout().setLayout(...)`. Check with the user before giving a page a different layout.
 
 ## 4. Shared state: the vault
 
-`src/plugins/vault.ts` stands in for Pinia or Vuex. It's one plain object per app, reached through `inject`, and split into namespaces by `initVault<T>(key)`. Use it when several components need the _same_ instance of a composable's state, or when state must survive a page switch. Follow `src/composables/usePages.ts`:
+`src/plugins/vault.ts` stands in for Pinia or Vuex. It's one plain object per app, reached through `inject`, and split into namespaces by `initVault<T>(key)`. Use it when several components need the _same_ instance of a composable's state, or when state must survive a page switch. Follow `src/composables/usePages.ts` or `useLayout.ts`:
 
 ```ts
 import { initVault } from "@/plugins/vault";
@@ -238,7 +256,7 @@ They share one module-level `resize` listener and aren't installed as a Vue plug
 
 - Match the file you're in, because the codebase mixes two styles.
   - Single quotes and no semicolons: `useJobFilters`, `JobCard`, `JobsPager`, `JobsEmptyState`, `JobsErrorState` and `AppHeader`.
-  - Double quotes and semicolons: `api.ts`, the `JobService` models, `HomePage`, `HeroSection`, `JobsSection`, `JobFilterForm`, `AppFooter`, the plugins, router, vault, `usePages` and `PageView`.
+  - Double quotes and semicolons: `main.ts`, `entry.ts`, `App`, `AppRender`, `api.ts`, the `JobService` models, `HomePage`, `ContentHomepage`, `HeroSection`, `JobsSection`, `JobFilterForm`, `AppFooter`, the plugins, router, vault, `usePages`, `useLayout` and `PageView`.
   - Don't reformat files you aren't otherwise changing.
 - Templates use PascalCase component tags. Use `aria-hidden="true"` on decorative glyphs and an `aria-label` on icon-only controls, as the existing components do.
 
