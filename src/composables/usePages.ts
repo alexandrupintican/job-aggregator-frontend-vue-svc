@@ -1,5 +1,5 @@
 import { initVault } from "@/plugins/vault";
-import { PageAliases } from "@/utils/pages";
+import { PageAliases } from "@/utils/enums";
 import { ref, Ref } from "vue";
 
 // types=

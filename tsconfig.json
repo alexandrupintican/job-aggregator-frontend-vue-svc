@@ -14,7 +14,8 @@
     "resolveJsonModule": true,
     "verbatimModuleSyntax": false,
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@globalStyle/*": ["./src/assets/style/*"]
     }
   },
   "types": ["vite/client"],
