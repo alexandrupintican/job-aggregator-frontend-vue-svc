@@ -60,7 +60,8 @@ A responsive job-search frontend built with **Vue 3**, **TypeScript**, **Vite**,
 │   ├── App.vue
 │   ├── entry.ts
 │   └── main.ts
-├── .env                  # VITE_API_URL
+├── .env                  # VITE_API_URL for local development (gitignored)
+├── compose.yaml          # Runs the frontend container
 ├── Dockerfile
 ├── nginx.conf
 ├── package.json
@@ -73,8 +74,8 @@ A responsive job-search frontend built with **Vue 3**, **TypeScript**, **Vite**,
 
 ### Prerequisites
 
-- Node.js 20+
-- Yarn (recommended), or npm
+- Node.js 24+ (the version the Docker build uses)
+- Yarn for local development. npm is used for production builds (the Dockerfile runs `npm ci`), so both `yarn.lock` and `package-lock.json` are committed; update both when you change dependencies.
 - The Jobs Listing API running locally. From the API repository, `go run ./cmd/jobs-api` serves `output/jobs.json` at `http://127.0.0.1:8000`, with Swagger UI at `/docs` and the spec at `/openapi.json`.
 
 ### Installation
@@ -87,7 +88,7 @@ yarn install
 
 ### Configuration
 
-The API base URL is read from `VITE_API_URL` in `.env`:
+For local development, the API base URL is read from `VITE_API_URL` in a local `.env` file (it is gitignored, so create it yourself):
 
 ```env
 VITE_API_URL=http://localhost:8000
@@ -116,16 +117,25 @@ yarn preview
 
 ## Docker
 
-Build and run the production container:
+The image contains the frontend only: Node builds the app, then nginx serves the static files. The Jobs Listing API is a separate service that you run and deploy on its own.
+
+`VITE_API_URL` is baked into the bundle at build time, and `.env` is not copied into the image, so the URL is passed as a build argument. The build fails if it is missing.
+
+With Compose (reads `VITE_API_URL` from your shell, falling back to the local `.env`):
 
 ```bash
-docker build -t job-aggregator .
+docker compose up --build
+VITE_API_URL=https://api.example.com docker compose up --build   # production URL
+```
+
+With plain Docker:
+
+```bash
+docker build --build-arg VITE_API_URL=https://api.example.com -t job-aggregator .
 docker run --rm -p 8080:80 job-aggregator
 ```
 
-Then open `http://localhost:8080`.
-
-`VITE_API_URL` is baked in at build time from `.env`, so the image calls whatever URL that file holds (by default `http://localhost:8000`, resolved in the visitor's browser). Change `.env` before building to point the image at a different API.
+Then open `http://localhost:8080`. The URL is resolved in the visitor's browser, so it must be the API's public address. Changing it means rebuilding the image.
 
 ---
 

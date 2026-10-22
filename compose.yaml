@@ -1,0 +1,16 @@
+# Runs the frontend only. The Jobs Listing API is a separate service; start it
+# on its own and point VITE_API_URL at it.
+#
+# VITE_API_URL is read from your shell environment, or from the .env file next
+# to this file when it isn't set there. In production, set it in the deploy
+# environment, e.g.:
+#   VITE_API_URL=https://api.example.com docker compose up --build
+services:
+  frontend:
+    build:
+      context: .
+      args:
+        VITE_API_URL: ${VITE_API_URL:?Set VITE_API_URL to the Jobs Listing API base URL}
+    ports:
+      - 8080:80
+    restart: unless-stopped

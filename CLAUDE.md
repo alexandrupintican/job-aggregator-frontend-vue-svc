@@ -8,11 +8,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 yarn dev       # Vite dev server on port 3000 (next free port if taken)
 yarn build     # vue-tsc -b type-check, then vite build -> dist/
 yarn preview   # serve the production build
-docker build -t job-aggregator . && docker run --rm -p 8080:80 job-aggregator   # nginx SPA image
+docker compose up --build   # frontend-only nginx image on :8080; VITE_API_URL from shell or local .env
+docker build --build-arg VITE_API_URL=https://api.example.com -t job-aggregator . && docker run --rm -p 8080:80 job-aggregator
 ```
 
 - There are no test, lint, or format scripts. ESLint and Prettier are installed and the VS Code settings enable them, but the repo has no ESLint or Prettier config file. `yarn build` is the only automated check, and it is what catches type errors.
-- Both `yarn.lock` and `package-lock.json` are committed. The README says to use Yarn, but the Dockerfile runs `npm install`, so keep both lockfiles in sync when you change dependencies.
+- Yarn is the package manager for local development; npm is used for production (the Dockerfile runs `npm ci`, which fails if `package-lock.json` is out of sync). Both `yarn.lock` and `package-lock.json` are committed, so when you change dependencies, update both lockfiles (`yarn install`, then `npm install --package-lock-only`) so they stay in sync.
 
 ## Architecture
 
@@ -53,7 +54,7 @@ The URL never changes. `HomePage.vue` wraps itself in `layouts/DefaultLayout.vue
 
 Only stored `ref`/`reactive` values are reactive, and `initVault` uses `inject`, so it only works inside `setup` or another injection context. `PublicMembers<T>` does not actually filter any keys.
 
-**Job search data.** Listings come from the Jobs Listing API (a separate Go service, `go run ./cmd/jobs-api`), which serves an exported `jobs.json` at `VITE_API_URL` (`.env`, default `http://localhost:8000`). Its spec is at `/openapi.json` and Swagger UI at `/docs`.
+**Job search data.** Listings come from the Jobs Listing API (a separate Go service, `go run ./cmd/jobs-api`), which serves an exported `jobs.json` at `VITE_API_URL` (a local, gitignored `.env` in development, e.g. `http://localhost:8000`; a Docker build argument in production). Its spec is at `/openapi.json` and Swagger UI at `/docs`.
 
 - `GET /api/jobs` accepts only `limit` (1–500, server default 100), `offset`, `status`, `source`, `company`, `location`, `work_mode` and `q`, and silently ignores anything else. Every filter except `q` is a case-insensitive exact match. Invalid pagination returns 400. The response is `{ total, limit, offset, jobs }`.
 - `composables/useJobFilters.ts` filters the collector's latest export through `getJobs`. It holds the query as `filters` (the live form model; the form has one field per parameter) and only calls the API when `applyFilters()` runs, so results change on submit, not as the user types. It also exposes `page`, `loading`, `error`, `goToOffset()` and `clearFilters()`, runs the first request on creation, and discards responses from superseded requests.
@@ -81,4 +82,4 @@ Only stored `ref`/`reactive` values are reactive, and `initVault` uses `inject`,
 - `src/vite/devSingleCss.ts` is a dev-only Vite plugin (`apply: "serve"`). It collects every transformed `.scss` source, compiles them together with sass, and serves the result as `/@dev-bundled-styles.css`, which it injects into `index.html`.
 - Production builds use `cssCodeSplit: false`, so there is a single CSS file.
 
-**Deployment.** Multi-stage Dockerfile: a Node 20 build stage, then nginx. `nginx.conf` falls back to `index.html` for every path. `.env` is committed and copied into the build, so `VITE_API_URL` is baked into the bundle at build time; nginx does not proxy `/api`.
+**Deployment.** Frontend only; the API is deployed separately. Multi-stage Dockerfile: a `node:24-alpine` build stage (`npm ci`, `npm run build`), then `nginx:alpine` serving `dist` on port 80. `compose.yaml` runs that one service on host port 8080. `.dockerignore` keeps `.env`, `node_modules`, `dist` and `.git` out of the build context. `VITE_API_URL` is therefore a required build argument (the build fails without it), baked into the bundle and resolved in the visitor's browser, so changing it means rebuilding. `nginx.conf` falls back to `index.html` for every path and does not proxy `/api`. Anything prefixed `VITE_` ends up in public JavaScript, so never put secrets in it.
