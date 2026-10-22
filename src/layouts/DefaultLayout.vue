@@ -1,18 +1,18 @@
 <script setup lang="ts">
-import AppFooter from "@/components/footer/AppFooter.vue";
 import AppHeader from "@/components/header/AppHeader.vue";
+import AppFooter from "@/components/footer/AppFooter.vue";
 </script>
 
 <template>
-  <div class="app-shell">
-    <main>
-      <slot />
-    </main>
-  </div>
+  <app-header />
+  <main class="content">
+    <slot />
+  </main>
+  <app-footer />
 </template>
 
 <style lang="scss" scoped>
-.app-shell {
-  overflow: hidden;
+.content {
+  min-height: var(--content-height);
 }
 </style>
